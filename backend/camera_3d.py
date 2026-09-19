@@ -176,8 +176,8 @@ class VirtualCamera3D:
         # x1 = dx * cos(psi) + dy * sin(psi)
         # y1 = -dx * sin(psi) + dy * cos(psi)
         # z1 = dz
-        x1 = dx * cos_psi + dy * sin_psi
-        y1 = -dx * sin_psi + dy * cos_psi
+        x1 = dx * cos_psi - dy * sin_psi
+        y1 = dx * sin_psi + dy * cos_psi
         z1 = dz
 
         # R_x(theta)^T rotates about X axis (tilt):
@@ -261,8 +261,8 @@ class VirtualCamera3D:
         # x_w = x1 * cos(psi) - y1 * sin(psi)
         # y_w = x1 * sin(psi) + y1 * cos(psi)
         # z_w = z1
-        x_w = x1 * cos_psi - y1 * sin_psi
-        y_w = x1 * sin_psi + y1 * cos_psi
+        x_w = x1 * cos_psi + y1 * sin_psi
+        y_w = -x1 * sin_psi + y1 * cos_psi
         z_w = z1
 
         return x_w, y_w, z_w

@@ -87,11 +87,10 @@ class TargetGenerator3D:
         # Motion Parameters
         self.base_x = 0.0
         self.base_y = 800.0
-        self.base_z = 0.0
-        self.radius_x = 400.0
-        self.radius_y = 150.0
-        self.radius_z = 300.0
-        self.omega = 0.25  # rad/s
+        self.radius_x = 25.0   # ~1.8 deg at nominal range 800 (spans 4.0 deg FOV)
+        self.radius_y = 10.0
+        self.radius_z = 18.0   # ~1.3 deg at nominal range 800 (spans 3.0 deg FOV)
+        self.omega = 0.35      # rad/s (~2.0 deg/s angular rate, within 5.0 deg/s slew limit)
 
         # User-defined 3D waypoints
         self.waypoints: List[Tuple[float, float, float]] = []

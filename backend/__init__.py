@@ -30,7 +30,21 @@ from backend.detection import (
     DetectionResult,
 )
 
-__version__ = "2.1.0"
+# Tracking & Controller Modules
+from backend.tracking import TrackingState, TrackingStatus, CoarseTrackingAutomaton
+from backend.predictor import (
+    StateEstimate2D,
+    LockRiskAssessment,
+    TrajectoryStateEstimator,
+    LockRiskEvaluator,
+)
+from backend.controller import (
+    ControllerOutput,
+    ReactiveBaselineController,
+    PredictiveLockRiskController,
+)
+
+__version__ = "2.2.0"
 
 __all__ = [
     "VirtualEnvironment",
@@ -61,4 +75,14 @@ __all__ = [
     "DetectionPipeline",
     "CandidateROI",
     "DetectionResult",
+    "TrackingState",
+    "TrackingStatus",
+    "CoarseTrackingAutomaton",
+    "StateEstimate2D",
+    "LockRiskAssessment",
+    "TrajectoryStateEstimator",
+    "LockRiskEvaluator",
+    "ControllerOutput",
+    "ReactiveBaselineController",
+    "PredictiveLockRiskController",
 ]
