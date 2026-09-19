@@ -19,7 +19,18 @@ from backend.environment_3d import VirtualEnvironment3D, Star3D
 from backend.target_3d import TargetGenerator3D, TargetMotionMode3D, TargetState3D, TargetShape
 from backend.camera_3d import VirtualCamera3D, ProjectionResult3D
 
-__version__ = "2.0.0"
+# AI & Detection Modules
+from backend.dataset_generator import SyntheticBeaconDatasetGenerator
+from backend.ai_model import BeaconValidatorEngine
+from backend.detection import (
+    ClassicalCandidateGenerator,
+    SubpixelCentroidEstimator,
+    DetectionPipeline,
+    CandidateROI,
+    DetectionResult,
+)
+
+__version__ = "2.1.0"
 
 __all__ = [
     "VirtualEnvironment",
@@ -43,4 +54,11 @@ __all__ = [
     "TargetShape",
     "VirtualCamera3D",
     "ProjectionResult3D",
+    "SyntheticBeaconDatasetGenerator",
+    "BeaconValidatorEngine",
+    "ClassicalCandidateGenerator",
+    "SubpixelCentroidEstimator",
+    "DetectionPipeline",
+    "CandidateROI",
+    "DetectionResult",
 ]
