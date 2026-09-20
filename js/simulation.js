@@ -25,14 +25,29 @@ export class SimulationOrchestrator {
 
     this.envRenderer = null;
     this.camRenderer = null;
+    this.envRenderers = [];
+    this.camRenderers = [];
     this.animFrameId = null;
     this.lastTimestamp = null;
     this.isRunning = false;
   }
 
   attachRenderers(envRenderer, camRenderer) {
-    this.envRenderer = envRenderer;
-    this.camRenderer = camRenderer;
+    if (Array.isArray(envRenderer)) {
+      this.envRenderers = envRenderer;
+      this.envRenderer = envRenderer[0] || null;
+    } else {
+      this.envRenderer = envRenderer;
+      this.envRenderers = envRenderer ? [envRenderer] : [];
+    }
+
+    if (Array.isArray(camRenderer)) {
+      this.camRenderers = camRenderer;
+      this.camRenderer = camRenderer[0] || null;
+    } else {
+      this.camRenderer = camRenderer;
+      this.camRenderers = camRenderer ? [camRenderer] : [];
+    }
   }
 
   start() {
@@ -206,19 +221,25 @@ export class SimulationOrchestrator {
     );
 
     // 9. Render Viewports
-    if (this.envRenderer) {
+    if (this.envRenderers && this.envRenderers.length > 0) {
       const conePoly = this.cameraEngine.getFOVConePolygon();
-      this.envRenderer.render(conePoly, tgt.trajectoryHistory);
+      for (const r of this.envRenderers) {
+        if (r) r.render(conePoly, tgt.trajectoryHistory);
+      }
     }
 
-    if (this.camRenderer) {
-      this.camRenderer.render(
-        detectionResult,
-        trackingResult,
-        sim.currentFrame,
-        sim.elapsedTime,
-        true // Show error vector
-      );
+    if (this.camRenderers && this.camRenderers.length > 0) {
+      for (const r of this.camRenderers) {
+        if (r) {
+          r.render(
+            detectionResult,
+            trackingResult,
+            sim.currentFrame,
+            sim.elapsedTime,
+            true // Show error vector
+          );
+        }
+      }
     }
 
     // Notify UI subscribers

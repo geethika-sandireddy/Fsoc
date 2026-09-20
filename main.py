@@ -50,13 +50,13 @@ def main() -> int:
     window = QMainWindow()
     window.setWindowTitle("ISRO PS-26169 · AI-Based Virtual Camera Tracking System (FSOC)")
     window.resize(1560, 920)
-    window.setMinimumSize(1280, 780)
+    window.setMinimumSize(1280, 720)
 
     web_view = QWebEngineView()
     web_view.setUrl(QUrl(url))
     window.setCentralWidget(web_view)
 
-    window.show()
+    window.showMaximized()
     return app.exec()
 
 
