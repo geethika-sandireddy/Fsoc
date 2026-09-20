@@ -12,7 +12,12 @@ from __future__ import annotations
 import dataclasses
 import math
 from typing import Optional, Tuple
-from backend.predictor import TrajectoryStateEstimator, LockRiskEvaluator, LockRiskAssessment
+from backend.predictor import (
+    TrajectoryStateEstimator,
+    KalmanStateEstimator2D,
+    LockRiskEvaluator,
+    LockRiskAssessment,
+)
 
 
 @dataclasses.dataclass
@@ -125,7 +130,7 @@ class PredictiveLockRiskController:
         self.deg_per_px_u = self.fov_h / float(width)
         self.deg_per_px_v = self.fov_v / float(height)
 
-        self.estimator = TrajectoryStateEstimator()
+        self.estimator = KalmanStateEstimator2D()
         self.risk_evaluator = LockRiskEvaluator(
             width=width, height=height, fov_h_deg=fov_h_deg, fov_v_deg=fov_v_deg
         )

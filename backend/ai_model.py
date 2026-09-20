@@ -245,7 +245,12 @@ class BeaconValidatorEngine:
         Trains the beacon validator network on synthetic ROI patches.
         Returns training metrics: final_loss, val_accuracy, val_roc_auc.
         """
-        metrics = {"val_accuracy": 0.0, "val_precision": 0.0, "val_recall": 0.0, "val_roc_auc": 0.0}
+        metrics = {
+    "val_accuracy": 0.0,
+    "val_precision": 0.0,
+    "val_recall": 0.0,
+    "val_roc_auc": 0.0,
+}
 
         if HAS_TORCH and self.pytorch_model is not None:
             model = self.pytorch_model
@@ -306,14 +311,59 @@ class BeaconValidatorEngine:
             self.numpy_engine.save_weights(WEIGHTS_PATH_NPZ)
 
         else:
-            # Calibrate NumPy matched filter threshold
-            val_scores = [self.numpy_engine.forward(X_val[i, 0]) for i in range(len(y_val))]
-            val_preds = np.array([1 if s >= 0.5 else 0 for s in val_scores])
-            acc = float(np.mean(val_preds == y_val))
+            # NumPy fallback: evaluate using actual validation predictions.
+            val_scores = np.array(
+                [self.numpy_engine.forward(X_val[i, 0]) for i in range(len(y_val))],
+                dtype=np.float64,
+            )
+
+            y_true = y_val.astype(np.int64)
+            val_preds = (val_scores >= 0.5).astype(np.int64)
+
+            # Accuracy
+            acc = float(np.mean(val_preds == y_true))
+
+            # Confusion matrix
+            tp = int(np.sum((val_preds == 1) & (y_true == 1)))
+            tn = int(np.sum((val_preds == 0) & (y_true == 0)))
+            fp = int(np.sum((val_preds == 1) & (y_true == 0)))
+            fn = int(np.sum((val_preds == 0) & (y_true == 1)))
+
+            # Precision
+            precision = tp / max(1, tp + fp)
+
+            # Recall
+            recall = tp / max(1, tp + fn)
+
+            # F1
+            f1 = (
+                2.0 * precision * recall
+                / max(1e-12, precision + recall)
+            )
+
+            # Genuine ROC-AUC using pairwise ranking.
+            positives = val_scores[y_true == 1]
+            negatives = val_scores[y_true == 0]
+
+            if len(positives) > 0 and len(negatives) > 0:
+                comparisons = positives[:, None] - negatives[None, :]
+
+                roc_auc = float(
+                    (
+                        np.sum(comparisons > 0)
+                        + 0.5 * np.sum(comparisons == 0)
+                    )
+                    / (len(positives) * len(negatives))
+                )
+            else:
+                roc_auc = 0.0
+
             metrics["val_accuracy"] = acc
-            metrics["val_precision"] = 0.90
-            metrics["val_recall"] = 0.92
-            metrics["val_roc_auc"] = 0.94
+            metrics["val_precision"] = float(precision)
+            metrics["val_recall"] = float(recall)
+            metrics["val_f1"] = float(f1)
+            metrics["val_roc_auc"] = roc_auc
+
             self.numpy_engine.save_weights(WEIGHTS_PATH_NPZ)
 
         return metrics

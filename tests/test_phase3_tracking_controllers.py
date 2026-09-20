@@ -18,7 +18,11 @@ if str(ROOT) not in sys.path:
 
 from backend.tracking import CoarseTrackingAutomaton, TrackingState
 from backend.detection import DetectionResult
-from backend.predictor import TrajectoryStateEstimator, LockRiskEvaluator
+from backend.predictor import (
+    TrajectoryStateEstimator,
+    KalmanStateEstimator2D,
+    LockRiskEvaluator,
+)
 from backend.controller import ReactiveBaselineController, PredictiveLockRiskController
 from backend.environment_3d import VirtualEnvironment3D
 from backend.target_3d import TargetGenerator3D, TargetMotionMode3D
@@ -144,6 +148,33 @@ def test_slew_rate_limiter_strict_compliance():
     assert abs(out_p.delta_tilt_deg) <= max_allowable_step + 1e-6
     assert out_p.is_slew_limited is True
 
+
+
+def test_kalman_state_estimator_velocity_tracking():
+    """Verify Kalman estimator tracks a constant-velocity beacon."""
+    est = KalmanStateEstimator2D(
+        measurement_std_px=1.5,
+        process_accel_std_px_s2=20.0,
+    )
+
+    dt = 0.05
+    true_vu = 40.0
+    cur_u = 200.0
+
+    for _ in range(80):
+        cur_u += true_vu * dt
+        state = est.update(
+            meas_u=cur_u,
+            meas_v=240.0,
+            dt=dt,
+        )
+
+    assert state.is_valid is True
+    assert math.isfinite(state.u)
+    assert math.isfinite(state.v)
+    assert math.isfinite(state.vu)
+    assert math.isfinite(state.vv)
+    assert math.isclose(state.vu, true_vu, abs_tol=5.0)
 
 # =========================================================================
 # 4. Comparative Closed-Loop Simulation: Baseline vs. Predictive Controller
