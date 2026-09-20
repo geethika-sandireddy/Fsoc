@@ -133,6 +133,154 @@ class TrajectoryStateEstimator:
             is_valid=self.initialized,
         )
 
+class KalmanStateEstimator2D:
+    """
+    Constant-acceleration Kalman filter for 2D FPA beacon tracking.
+
+    State:
+        [u, v, vu, vv, au, av]
+
+    Measurement:
+        [u, v]
+
+    This is maintained separately from the Alpha-Beta-Gamma estimator
+    so both estimators can be benchmarked without changing the existing
+    prediction/risk pipeline.
+    """
+
+    def __init__(
+        self,
+        measurement_std_px: float = 2.0,
+        process_accel_std_px_s2: float = 40.0,
+    ) -> None:
+        self.measurement_std = float(measurement_std_px)
+        self.process_accel_std = float(process_accel_std_px_s2)
+
+        self.x = None
+        self.P = None
+        self.initialized = False
+
+    def reset(self) -> None:
+        self.x = None
+        self.P = None
+        self.initialized = False
+
+    def _transition_matrix(self, dt: float):
+        dt2 = dt * dt
+
+        return [
+            [1.0, 0.0, dt, 0.0, 0.5 * dt2, 0.0],
+            [0.0, 1.0, 0.0, dt, 0.0, 0.5 * dt2],
+            [0.0, 0.0, 1.0, 0.0, dt, 0.0],
+            [0.0, 0.0, 0.0, 1.0, 0.0, dt],
+            [0.0, 0.0, 0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, 0.0, 0.0, 0.0, 1.0],
+        ]
+
+    def update(
+        self,
+        meas_u: Optional[float],
+        meas_v: Optional[float],
+        dt: float,
+    ) -> StateEstimate2D:
+        import numpy as np
+
+        dt = max(0.001, float(dt))
+        F = np.asarray(self._transition_matrix(dt), dtype=float)
+
+        # Process noise: white acceleration model.
+        q = self.process_accel_std ** 2
+        dt2 = dt * dt
+        dt3 = dt2 * dt
+        dt4 = dt3 * dt
+
+        Q = np.zeros((6, 6), dtype=float)
+
+        # Position/velocity/acceleration coupling for each axis.
+        q_block = q * np.array(
+            [
+                [dt4 / 4.0, dt3 / 2.0, dt2 / 2.0],
+                [dt3 / 2.0, dt2, dt],
+                [dt2 / 2.0, dt, 1.0],
+            ],
+            dtype=float,
+        )
+
+        Q[np.ix_([0, 2, 4], [0, 2, 4])] = q_block
+        Q[np.ix_([1, 3, 5], [1, 3, 5])] = q_block
+
+        R = np.diag(
+            [
+                self.measurement_std ** 2,
+                self.measurement_std ** 2,
+            ]
+        )
+
+        H = np.asarray(
+            [
+                [1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                [0.0, 1.0, 0.0, 0.0, 0.0, 0.0],
+            ],
+            dtype=float,
+        )
+
+        # First valid measurement initializes position.
+        if not self.initialized:
+            if meas_u is None or meas_v is None:
+                return StateEstimate2D(
+                    u=320.0,
+                    v=240.0,
+                    is_valid=False,
+                )
+
+            self.x = np.asarray(
+                [float(meas_u), float(meas_v), 0.0, 0.0, 0.0, 0.0],
+                dtype=float,
+            )
+
+            self.P = np.diag(
+                [
+                    4.0,
+                    4.0,
+                    400.0,
+                    400.0,
+                    1600.0,
+                    1600.0,
+                ]
+            )
+
+            self.initialized = True
+
+        else:
+            # Prediction.
+            self.x = F @ self.x
+            self.P = F @ self.P @ F.T + Q
+
+            # Measurement update when detection is available.
+            if meas_u is not None and meas_v is not None:
+                z = np.asarray(
+                    [float(meas_u), float(meas_v)],
+                    dtype=float,
+                )
+
+                innovation = z - H @ self.x
+                S = H @ self.P @ H.T + R
+                K = self.P @ H.T @ np.linalg.inv(S)
+
+                self.x = self.x + K @ innovation
+
+                identity = np.eye(6)
+                self.P = (identity - K @ H) @ self.P
+
+        return StateEstimate2D(
+            u=float(self.x[0]),
+            v=float(self.x[1]),
+            vu=float(self.x[2]),
+            vv=float(self.x[3]),
+            au=float(self.x[4]),
+            av=float(self.x[5]),
+            is_valid=self.initialized,
+        )
 
 class LockRiskEvaluator:
     """

@@ -30,6 +30,80 @@ class CandidateROI:
     peak_v: int
     patch: np.ndarray  # 32x32 uint8 patch
 
+class AdaptivePreprocessor:
+    """
+    Selects lightweight preprocessing based on observed frame statistics.
+
+    Modes:
+    - NORMAL: preserve the existing pipeline behaviour
+    - LOW_LIGHT: local contrast enhancement
+    - NOISY: stronger denoising
+    - LOW_CONTRAST: local contrast enhancement + denoising
+    """
+
+    def analyze(self, frame: np.ndarray) -> str:
+        if frame.ndim != 2:
+            raise ValueError("AdaptivePreprocessor expects a monochrome 2D frame")
+
+        median_intensity = float(np.median(frame))
+
+        # Robust background-noise estimate. Unlike global standard deviation,
+        # MAD is much less affected by the bright beacon itself.
+        mad_intensity = float(
+            np.median(np.abs(frame.astype(np.float32) - median_intensity))
+        )
+
+        # Fraction of extreme pixels. Clean frames contain essentially none,
+        # while the configured S&P disturbance produces a large fraction.
+        extreme_fraction = float(
+            np.mean((frame <= 2) | (frame >= 253))
+        )
+
+        # Very dark sensor/background regime.
+        if median_intensity <= 5.0:
+            return "LOW_LIGHT"
+
+        # Impulse noise such as salt-and-pepper.
+        if extreme_fraction > 0.05:
+            return "NOISY"
+
+        # Strong broadband intensity variation, e.g. Gaussian readout noise.
+        if mad_intensity >= 7.0:
+            return "NOISY"
+
+        # Reduced-contrast atmospheric conditions such as fog.
+                # Atmospheric haze/fog in the simulator raises the background level
+        # while remaining below the robust sensor-noise threshold.
+        if median_intensity >= 14.0 and mad_intensity < 7.0:
+            return "LOW_CONTRAST"
+        
+
+        return "NORMAL"
+
+    def apply(self, frame: np.ndarray) -> Tuple[np.ndarray, str]:
+        """
+        Returns (processed_frame, selected_mode).
+        NORMAL intentionally preserves the original frame.
+        """
+        mode = self.analyze(frame)
+
+        if mode == "NORMAL":
+            return frame, mode
+
+        if mode == "NOISY":
+            processed = cv2.medianBlur(frame, 3)
+            return processed, mode
+
+        if mode == "LOW_LIGHT":
+            clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+            processed = clahe.apply(frame)
+            return processed, mode
+
+        # LOW_CONTRAST
+        denoised = cv2.medianBlur(frame, 3)
+        clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8, 8))
+        processed = clahe.apply(denoised)
+        return processed, mode
 
 @dataclasses.dataclass
 class DetectionResult:
@@ -71,9 +145,17 @@ class ClassicalCandidateGenerator:
         small = frame[::16, ::16]
         bg_mean = float(np.mean(small))
         threshold = int(min(240.0, bg_mean + self.threshold_offset))
+        filtered_frame = cv2.medianBlur(frame, 3)
 
         # 2. Binary thresholding + morphological opening to eliminate isolated noise spikes
-        _, binary = cv2.threshold(frame, threshold, 255, cv2.THRESH_BINARY)
+        binary = np.empty_like(filtered_frame)
+        cv2.threshold(
+               filtered_frame,
+               threshold,
+               255,
+              cv2.THRESH_BINARY,
+              dst=binary,
+)
         kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
         # Morphological opening removes 1-pixel S&P noise spikes
         clean_binary = cv2.morphologyEx(binary, cv2.MORPH_OPEN, kernel)
@@ -92,9 +174,10 @@ class ClassicalCandidateGenerator:
             roi_mask = frame[by : by + bh, bx : bx + bw]
             if roi_mask.size == 0:
                 continue
+            peak_search = cv2.medianBlur(roi_mask, 3)
 
-            loc_max = np.argmax(roi_mask)
-            loc_y, loc_x = np.unravel_index(loc_max, roi_mask.shape)
+            loc_max = np.argmax(peak_search)
+            loc_y, loc_x = np.unravel_index(loc_max, peak_search.shape)
             peak_u = bx + loc_x
             peak_v = by + loc_y
             peak_val = int(frame[peak_v, peak_u])
@@ -180,7 +263,60 @@ class SubpixelCentroidEstimator:
 
         return c_u, c_v, active_pixels
 
+class CandidateScorer:
+    """
+    Secondary candidate scoring using measurable optical/profile features.
 
+    The CNN remains the primary beacon verifier. This scorer only provides
+    additional evidence for ranking candidates that have similar CNN scores.
+    """
+
+    @staticmethod
+    def optical_score(candidate: CandidateROI) -> float:
+        patch = candidate.patch.astype(np.float32)
+
+        background = float(np.median(patch))
+        signal = np.maximum(patch - background, 0.0)
+        total_signal = float(np.sum(signal))
+
+        if total_signal <= 1e-6:
+            return 0.0
+
+        yy, xx = np.indices(patch.shape, dtype=np.float32)
+        center_u = 16.0
+        center_v = 16.0
+
+        radius = np.sqrt(
+            (xx - center_u) ** 2 +
+            (yy - center_v) ** 2
+        )
+
+        weighted_radius = float(
+            np.sum(radius * signal) / total_signal
+        )
+
+        active_fraction = float(
+            np.mean(patch > background + 10.0)
+        )
+
+        # Compact optical spots receive higher score than diffuse regions.
+        compactness_score = float(
+            np.clip(1.0 - weighted_radius / 12.0, 0.0, 1.0)
+        )
+
+        # Keep the feature broad enough to cover the valid 5–20 px beacon size.
+        activity_score = float(
+            np.clip(active_fraction / 0.30, 0.0, 1.0)
+        )
+
+        return float(
+            np.clip(
+                0.60 * compactness_score +
+                0.40 * activity_score,
+                0.0,
+                1.0,
+            )
+        )
 class DetectionPipeline:
     """
     Complete AI & Computer Vision Detection Pipeline for ISRO PS-26169:
@@ -194,7 +330,9 @@ class DetectionPipeline:
         self.candidate_generator = ClassicalCandidateGenerator()
         self.ai_validator = BeaconValidatorEngine()
         self.centroid_estimator = SubpixelCentroidEstimator()
+        self.preprocessor = AdaptivePreprocessor()
         self.ai_confidence_threshold = ai_confidence_threshold
+        self.last_preprocess_mode = "NORMAL"
 
     def detect(
         self,
@@ -207,7 +345,9 @@ class DetectionPipeline:
         """
         t0 = time.perf_counter()
 
-        candidates = self.candidate_generator.extract_candidates(frame)
+        processed_frame, preprocess_mode = self.preprocessor.apply(frame)
+        self.last_preprocess_mode = preprocess_mode
+        candidates = self.candidate_generator.extract_candidates(processed_frame)
         if not candidates:
             dt_ms = (time.perf_counter() - t0) * 1000.0
             return DetectionResult(
@@ -220,10 +360,20 @@ class DetectionPipeline:
         best_score = -1.0
 
         for cand in candidates:
-            # Score patch through Neural Beacon Validator
-            score = self.ai_validator.validate_roi(cand.patch)
-            if score > best_score:
-                best_score = score
+            # CNN remains the primary verifier.
+            ai_score = self.ai_validator.validate_roi(cand.patch)
+
+            # Optical profile provides a small auxiliary ranking signal.
+            optical_score = CandidateScorer.optical_score(cand)
+
+            # Keep the final confidence in [0, 1] while preserving CNN dominance.
+            combined_score = (
+                0.98 * ai_score +
+                0.02 * optical_score
+            )
+
+            if combined_score > best_score:
+                best_score = combined_score
                 best_cand = cand
 
         if best_cand is None or best_score < self.ai_confidence_threshold:
