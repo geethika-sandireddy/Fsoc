@@ -62,7 +62,7 @@ export class DetectorInterface {
             (data[((y - 1) * width + x) * 4] > threshold ? 1 : 0) +
             (data[((y + 1) * width + x) * 4] > threshold ? 1 : 0);
 
-          if (neighborsAbove >= 1) {
+          if (neighborsAbove >= 3) {
             maxVal = val;
             peakX = x;
             peakY = y;
@@ -117,6 +117,69 @@ export class DetectorInterface {
         y: null,
         confidence: 0.0,
         peakVal: maxVal,
+        method: 'Classical CV (Adaptive Threshold + IW-CoG)'
+      };
+    }
+        // Reject small star-like candidates.
+    // The simulated beacon occupies substantially more pixels than
+    // background stars/noise speckles.
+    const minBeaconPixels = Math.max(
+      12,
+      SimulationState.detection.minBlobArea || 12
+    );
+
+    if (activePixels < minBeaconPixels) {
+      return {
+        detected: false,
+        x: null,
+        y: null,
+        confidence: 0.0,
+        peakVal: maxVal,
+        activePixels,
+        method: 'Classical CV (Adaptive Threshold + IW-CoG)'
+      };
+    }
+        // Measure the actual above-threshold footprint inside the centroid window.
+    let blobMinX = maxX;
+    let blobMaxX = minX;
+    let blobMinY = maxY;
+    let blobMaxY = minY;
+
+    for (let y = minY; y <= maxY; y++) {
+      const rowOffset = y * width;
+
+      for (let x = minX; x <= maxX; x++) {
+        const val = data[(rowOffset + x) * 4];
+
+        if (val > threshold) {
+          blobMinX = Math.min(blobMinX, x);
+          blobMaxX = Math.max(blobMaxX, x);
+          blobMinY = Math.min(blobMinY, y);
+          blobMaxY = Math.max(blobMaxY, y);
+        }
+      }
+    }
+
+    const blobWidth = blobMaxX - blobMinX + 1;
+    const blobHeight = blobMaxY - blobMinY + 1;
+
+    // Reject isolated star/noise candidates.
+    // Beacon sizes are 5–20 px and therefore form a meaningful 2D footprint.
+    const minBeaconPeak = 180;
+
+    if (
+      activePixels < 15 ||
+      blobWidth < 4 ||
+      blobHeight < 4 ||
+      maxVal < minBeaconPeak
+    ) {
+      return {
+        detected: false,
+        x: null,
+        y: null,
+        confidence: 0.0,
+        peakVal: maxVal,
+        activePixels,
         method: 'Classical CV (Adaptive Threshold + IW-CoG)'
       };
     }

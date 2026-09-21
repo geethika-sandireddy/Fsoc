@@ -110,15 +110,31 @@ export class TrackingEngine {
           trk.state = 'ACQUIRING';
           break;
 
-        case 'ACQUIRING':
-          if (trk.consecutiveDetections >= acqReq) {
+                case 'ACQUIRING': {
+          const centerX = SimulationState.camera.resolutionWidth / 2;
+          const centerY = SimulationState.camera.resolutionHeight / 2;
+
+          const errorPx = Math.hypot(
+            this.estX - centerX,
+            this.estY - centerY
+          );
+
+          const lockTolerance = trk.lockPointingTolerancePx || 25;
+
+          if (
+            trk.consecutiveDetections >= acqReq &&
+            errorPx <= lockTolerance
+          ) {
             trk.state = 'LOCKED';
+
             if (met.acquisitionTime === null) {
               met.acquisitionTime = parseFloat(elapsedTime.toFixed(2));
             }
+
             this.initialAcquisitionDone = true;
           }
           break;
+        }
 
         case 'RE-ACQUIRING':
           if (trk.consecutiveDetections >= acqReq) {
@@ -134,10 +150,27 @@ export class TrackingEngine {
           trk.state = 'RE-ACQUIRING';
           break;
 
-        case 'LOCKED':
-        default:
-          // Remain in locked state
-          break;
+        case 'LOCKED': {
+          const centerX = SimulationState.camera.resolutionWidth / 2;
+          const centerY = SimulationState.camera.resolutionHeight / 2;
+
+          const errorPx = Math.hypot(
+          this.estX - centerX,
+          this.estY - centerY
+  );
+
+       const lockTolerance = trk.lockPointingTolerancePx || 25;
+
+       // Leave LOCKED when pointing drifts outside the lock tolerance.
+       if (errorPx > lockTolerance) {
+    trk.state = 'ACQUIRING';
+  }
+
+  break;
+}
+
+default:
+  break;
       }
     } else {
       // Detection missed in this frame

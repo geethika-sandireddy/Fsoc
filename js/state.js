@@ -113,7 +113,7 @@ export const SimulationState = {
   detection: {
     activeDetector: 'classical', // 'classical' (Adaptive Threshold + IW-CoG), 'ai_extensible'
     thresholdOffset: 25,
-    minBlobArea: 3,
+    minBlobArea: 12,
     maxBlobArea: 500,
     // Pluggable AI detector slot metadata
     aiDetectorAvailable: false,
@@ -131,7 +131,7 @@ export const SimulationState = {
     consecutiveDetections: 0,
     consecutiveMisses: 0,
     // Implementation-defined transition parameters
-    acquisitionFramesRequired: 5,
+    acquisitionFramesRequired: 1,
     lossFramesThreshold: 10,
     lockPointingTolerancePx: 25 // px from boresight for initial acquisition confirmation
   },

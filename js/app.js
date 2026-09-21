@@ -1115,17 +1115,30 @@ export class AppCoordinator {
   }
 
   updateCharts(state) {
-    const hist = state.metrics.history;
-    if (this.charts.posSpark && this.activeView === 'home') {
-      this.charts.posSpark.render(hist.centroidErrors, hist.timestamps);
-    }
-    if (this.charts.perfError && this.activeView === 'performance') {
-      this.charts.perfError.render(hist.centroidErrors, hist.timestamps);
-    }
-    if (this.charts.perfFps && this.activeView === 'performance') {
-      this.charts.perfFps.render(hist.processingFPS, hist.timestamps);
-    }
+  const hist = state.metrics.history || {};
+  const timestamps = hist.timestamps || [];
+
+  if (this.charts.posSpark) {
+    this.charts.posSpark.render(
+      hist.pointingErrors || [],
+      timestamps
+    );
   }
+
+  if (this.charts.perfError) {
+    this.charts.perfError.render(
+      hist.pointingErrors || [],
+      timestamps
+    );
+  }
+
+  if (this.charts.perfFps) {
+    this.charts.perfFps.render(
+      hist.processingFPS || [],
+      timestamps
+    );
+  }
+}
 
   addEventLog(level, message) {
     const tbody = document.getElementById('dash-event-log-body');

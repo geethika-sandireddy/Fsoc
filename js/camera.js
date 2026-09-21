@@ -41,8 +41,16 @@ export class CameraEngine {
     // Nominal reference distance is 1000 px along optical axis
     // Tilt angle offset alters vertical positioning
     const nominalDistance = 1000.0;
-    const deltaDistance = targetElevationDistance - nominalDistance;
-    const elevationOffsetDeg = (deltaDistance / nominalDistance) * (cam.fovV * 1.5) - cam.tilt;
+
+// Camera boresight points along +Y.
+// Vertical sensor displacement should depend on forward Y distance,
+// not Euclidean range, so lateral target motion does not create
+// artificial vertical FOV error.
+const forwardDistance = worldY - cam.stationY;
+const deltaDistance = forwardDistance - nominalDistance;
+
+const elevationOffsetDeg =
+  (deltaDistance / nominalDistance) * (cam.fovV * 1.5) - cam.tilt;
 
     // Sensor coordinates (boresight is at W/2 = 320, H/2 = 240)
     // Pan: positive azimuth offset shifts target to right (+X) on sensor
