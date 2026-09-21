@@ -9,10 +9,12 @@ import { SimulationState } from './state.js';
 export class PanTiltController {
   constructor() {
     this.accumulatorTime = 0;
+    this.searchPhase = 0;
   }
 
   reset() {
     this.accumulatorTime = 0;
+    this.searchPhase = 0;
     const ctrl = SimulationState.controller;
     ctrl.panErrorAngle = 0.0;
     ctrl.tiltErrorAngle = 0.0;
@@ -51,19 +53,53 @@ export class PanTiltController {
     this.accumulatorTime = 0; // Reset accumulator
 
     if (detectedX === null || detectedY === null) {
-      // In SEARCHING or LOST state: no valid beacon feedback, hold position
-      ctrl.panErrorAngle = 0.0;
-      ctrl.tiltErrorAngle = 0.0;
-      ctrl.panDeltaApplied = 0.0;
-      ctrl.tiltDeltaApplied = 0.0;
-      return {
-        updated: false,
-        pan: cam.pan,
-        tilt: cam.tilt,
-        panDelta: 0,
-        tiltDelta: 0
-      };
-    }
+  // Active search pattern for acquisition / re-acquisition.
+  // The target remains fully dynamic; the camera scans its allowed travel.
+  this.searchPhase += controlDt;
+
+  const desiredPan =
+    45.0 * Math.sin(this.searchPhase * 0.35);
+
+  const desiredTilt =
+    30.0 * Math.sin(this.searchPhase * 0.22);
+
+  const maxPanDelta = maxPanSpeed * controlDt;
+  const maxTiltDelta = maxTiltSpeed * controlDt;
+
+  const panError = desiredPan - cam.pan;
+  const tiltError = desiredTilt - cam.tilt;
+
+  const appliedPanDelta = Math.max(
+    -maxPanDelta,
+    Math.min(maxPanDelta, panError)
+  );
+
+  const appliedTiltDelta = Math.max(
+    -maxTiltDelta,
+    Math.min(maxTiltDelta, tiltError)
+  );
+
+  cam.pan += appliedPanDelta;
+  cam.tilt += appliedTiltDelta;
+
+  cam.pan = Math.max(-45.0, Math.min(45.0, cam.pan));
+  cam.tilt = Math.max(-30.0, Math.min(30.0, cam.tilt));
+
+  ctrl.panErrorAngle = 0.0;
+  ctrl.tiltErrorAngle = 0.0;
+  ctrl.panDeltaApplied = appliedPanDelta;
+  ctrl.tiltDeltaApplied = appliedTiltDelta;
+
+  return {
+    updated: true,
+    pan: parseFloat(cam.pan.toFixed(2)),
+    tilt: parseFloat(cam.tilt.toFixed(2)),
+    panDelta: appliedPanDelta,
+    tiltDelta: appliedTiltDelta
+  };
+}
+
+    
 
     // 1. Pixel-to-Angle Linear Approximation
     // dx > 0 means target is to the right of boresight -> camera must pan right (+Pan)
