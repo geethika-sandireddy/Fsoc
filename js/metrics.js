@@ -52,11 +52,20 @@ export class MetricsEngine {
 
     // 2. Centroiding Error & Pointing Error computation
     if (detectedX !== null && detectedY !== null) {
-      // Pointing Error relative to camera boresight (320, 240)
+      // Pointing Error relative to camera boresight (320, 240) in pixels
       const cx = cam.resolutionWidth / 2;
       const cy = cam.resolutionHeight / 2;
-      const pErr = Math.sqrt(Math.pow(detectedX - cx, 2) + Math.pow(detectedY - cy, 2));
+      const dxPx = detectedX - cx;
+      const dyPx = detectedY - cy;
+      const pErr = Math.sqrt(dxPx * dxPx + dyPx * dyPx);
       met.instantaneousPointingError = parseFloat(pErr.toFixed(2));
+
+      // Angular Pointing Error in degrees and millidegrees (mdeg)
+      const dxDeg = (dxPx / cam.resolutionWidth) * cam.fovH;
+      const dyDeg = (dyPx / cam.resolutionHeight) * cam.fovV;
+      const angErrDeg = Math.sqrt(dxDeg * dxDeg + dyDeg * dyDeg);
+      met.instantaneousAngularPointingError = parseFloat(angErrDeg.toFixed(4));
+      met.instantaneousAngularPointingErrorMdeg = parseFloat((angErrDeg * 1000).toFixed(2));
 
       // Centroiding Error relative to ground truth beacon
       if (groundTruthCamX !== null && groundTruthCamY !== null) {
@@ -82,6 +91,8 @@ export class MetricsEngine {
       }
     } else {
       met.instantaneousPointingError = null;
+      met.instantaneousAngularPointingError = null;
+      met.instantaneousAngularPointingErrorMdeg = null;
       met.instantaneousCentroidError = null;
     }
 
@@ -122,6 +133,7 @@ export class MetricsEngine {
       met.history.timestamps.push(parseFloat(elapsedTime.toFixed(1)));
       met.history.centroidErrors.push(met.instantaneousCentroidError !== null ? met.instantaneousCentroidError : 0);
       met.history.pointingErrors.push(met.instantaneousPointingError !== null ? met.instantaneousPointingError : 0);
+      met.history.angularPointingErrors.push(met.instantaneousAngularPointingErrorMdeg !== null ? met.instantaneousAngularPointingErrorMdeg : 0);
       met.history.panAngles.push(met.panAngle);
       met.history.tiltAngles.push(met.tiltAngle);
       met.history.processingFPS.push(met.processingFPS !== null ? met.processingFPS : 0);
@@ -130,6 +142,7 @@ export class MetricsEngine {
         met.history.timestamps.shift();
         met.history.centroidErrors.shift();
         met.history.pointingErrors.shift();
+        met.history.angularPointingErrors.shift();
         met.history.panAngles.shift();
         met.history.tiltAngles.shift();
         met.history.processingFPS.shift();

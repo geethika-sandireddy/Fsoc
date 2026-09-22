@@ -1,7 +1,14 @@
 /**
  * Live Camera Viewport & HUD Renderer — ISRO PS-26169.
- * Renders 640x480 Monochrome FPA sensor feed, background stars, beacon optical bloom,
- * real disturbance buffer, tracking bounding box, boresight reticle, and error vector.
+ * Renders an authentic wide virtual optical camera view:
+ * - Dark optical FPA sensor field (640x480 native projection) with corner brackets & scale ticks
+ * - Camera optical center / crosshair reticle and boresight box at (320, 240)
+ * - Configurable optical beacon target (Square, Circle, Rectangle, Point Source) with Gaussian bloom
+ * - Detection brackets [ ◉ ], centroid crosshair, and target ID
+ * - Dynamic Pointing Error / LOS Vector from boresight to target centroid with distance/angle badge
+ * - Kalman Filter state prediction marker ○ (predX, predY) with uncertainty ellipse
+ * - FOV boundary proximity and out-of-FOV detection warnings
+ * - Top & bottom mission HUD overlays with real runtime state
  */
 
 import { SimulationState, prng } from './state.js';
@@ -15,50 +22,21 @@ export class CameraViewRenderer {
     this.offscreen.width = 640;
     this.offscreen.height = 480;
     this.offCtx = this.offscreen.getContext('2d', { willReadFrequently: true });
-
-    // Pre-generate sensor stars relative to camera FOV
-    this.sensorStars = [];
-    for (let i = 0; i < 90; i++) {
-      this.sensorStars.push({
-        baseX: prng.range(0, 640),
-        baseY: prng.range(0, 480),
-        r: prng.range(0.6, 1.4),
-        brightness: prng.range(30, 95)
-      });
-    }
   }
 
   /**
    * Generates the raw optical frame, applies disturbances, and returns ImageData.
+   * At startup / with disturbances disabled, the frame is 100% pristine and clean.
    */
   generateRawSensorFrame(groundTruthCamX, groundTruthCamY, disturbanceEngine) {
     const ctx = this.offCtx;
     const W = 640;
     const H = 480;
     const tgt = SimulationState.target;
-    const cam = SimulationState.camera;
 
-    // 1. Dark sensor noise floor
-    ctx.fillStyle = '#060a10';
+    // 1. Clean, dark optical sensor background (Zero baseline noise)
+    ctx.fillStyle = '#030712';
     ctx.fillRect(0, 0, W, H);
-
-    // 2. Stars passing through FOV with camera pan/tilt parallax
-    ctx.save();
-    const panShift = (cam.pan * 25) % W;
-    const tiltShift = (cam.tilt * 25) % H;
-
-    for (const s of this.sensorStars) {
-      let sx = (s.baseX - panShift) % W;
-      let sy = (s.baseY + tiltShift) % H;
-      if (sx < 0) sx += W;
-      if (sy < 0) sy += H;
-
-      ctx.fillStyle = `rgb(${s.brightness}, ${s.brightness}, ${s.brightness})`;
-      ctx.beginPath();
-      ctx.arc(sx, sy, s.r, 0, Math.PI * 2);
-      ctx.fill();
-    }
-    ctx.restore();
 
     // 3. Optical Beacon Spot (Target)
     if (groundTruthCamX !== null && groundTruthCamY !== null) {
@@ -67,24 +45,28 @@ export class CameraViewRenderer {
       const sz = Math.max(5, Math.min(20, tgt.size || 10));
 
       ctx.save();
-      // Outer optical bloom
-      const bloomGrad = ctx.createRadialGradient(bx, by, sz * 0.2, bx, by, sz * 2.8);
-      bloomGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
-      bloomGrad.addColorStop(0.35, 'rgba(220, 220, 240, 0.55)');
-      bloomGrad.addColorStop(0.7, 'rgba(120, 140, 180, 0.2)');
+      // Outer optical diffraction bloom
+      const bloomRadius = sz * 2.8;
+      const bloomGrad = ctx.createRadialGradient(bx, by, sz * 0.15, bx, by, bloomRadius);
+      bloomGrad.addColorStop(0, 'rgba(255, 255, 255, 0.98)');
+      bloomGrad.addColorStop(0.25, 'rgba(200, 230, 255, 0.7)');
+      bloomGrad.addColorStop(0.55, 'rgba(0, 210, 255, 0.3)');
+      bloomGrad.addColorStop(0.85, 'rgba(0, 140, 255, 0.1)');
       bloomGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
       ctx.fillStyle = bloomGrad;
       ctx.beginPath();
-      ctx.arc(bx, by, sz * 2.8, 0, Math.PI * 2);
+      ctx.arc(bx, by, bloomRadius, 0, Math.PI * 2);
       ctx.fill();
 
-      // Sharp central beacon core
+      // Sharp central beacon core matching configured shape
       ctx.fillStyle = '#ffffff';
-      if (tgt.shape === 'Circle') {
+      if (tgt.shape === 'Circle' || tgt.shape === 'Point Source') {
         ctx.beginPath();
         ctx.arc(bx, by, sz / 2, 0, Math.PI * 2);
         ctx.fill();
+      } else if (tgt.shape === 'Rectangle') {
+        ctx.fillRect(bx - sz * 0.75, by - sz * 0.4, sz * 1.5, sz * 0.8);
       } else {
         // Default: Square
         ctx.fillRect(bx - sz / 2, by - sz / 2, sz, sz);
@@ -104,163 +86,305 @@ export class CameraViewRenderer {
 
   /**
    * Renders the complete camera viewport with HUD overlays:
-   * Tracking box, boresight crosshair, target centroid, error vector, and telemetry badges.
+   * Tracking box, boresight crosshair, target centroid, error vector, Kalman prediction, and telemetry badges.
    */
   render(detectionResult, trackingResult, frameIndex, elapsedTime, showVector = true) {
     const ctx = this.ctx;
     const canvas = this.canvas;
+
+    // Dynamically match internal resolution to client display size for maximum sharpness
+    if (canvas.clientWidth && canvas.clientHeight && canvas.clientWidth > 50 && canvas.clientHeight > 50) {
+      const dw = Math.round(canvas.clientWidth);
+      const dh = Math.round(canvas.clientHeight);
+      if (Math.abs(canvas.width - dw) > 4 || Math.abs(canvas.height - dh) > 4) {
+        canvas.width = dw;
+        canvas.height = dh;
+      }
+    }
+
     const cw = canvas.width;
     const ch = canvas.height;
     const W = 640;
     const H = 480;
 
-    // Scale offscreen 640x480 to canvas dimensions
+    // Scale offscreen 640x480 to canvas display dimensions with high-quality filtering
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(this.offscreen, 0, 0, cw, ch);
 
     const scaleX = cw / W;
     const scaleY = ch / H;
+    const uiScale = Math.max(0.75, Math.min(scaleX, scaleY));
 
     const toDisplayX = (x) => x * scaleX;
     const toDisplayY = (y) => y * scaleY;
 
-    // 1. Camera Optical Boresight Center (+) at (320, 240)
-    const boresightX = toDisplayX(320);
-    const boresightY = toDisplayY(240);
-    const crossSize = 14;
-
+    // 1. Subtle Sensor Boundary Frame & Corner Brackets
     ctx.save();
-    ctx.strokeStyle = 'rgba(0, 210, 255, 0.6)';
-    ctx.lineWidth = 1;
-    // Crosshair lines
+    ctx.strokeStyle = 'rgba(0, 210, 255, 0.45)';
+    ctx.lineWidth = Math.max(1.2, 1.4 * uiScale);
+    const cornerLen = Math.round(18 * uiScale);
+    const pad = Math.round(8 * uiScale);
+    // Top-left
     ctx.beginPath();
-    ctx.moveTo(boresightX - crossSize, boresightY);
-    ctx.lineTo(boresightX + crossSize, boresightY);
-    ctx.moveTo(boresightX, boresightY - crossSize);
-    ctx.lineTo(boresightX, boresightY + crossSize);
+    ctx.moveTo(pad, pad + cornerLen); ctx.lineTo(pad, pad); ctx.lineTo(pad + cornerLen, pad);
+    // Top-right
+    ctx.moveTo(cw - pad - cornerLen, pad); ctx.lineTo(cw - pad, pad); ctx.lineTo(cw - pad, pad + cornerLen);
+    // Bottom-left
+    ctx.moveTo(pad, ch - pad - cornerLen); ctx.lineTo(pad, ch - pad); ctx.lineTo(pad + cornerLen, ch - pad);
+    // Bottom-right
+    ctx.moveTo(cw - pad - cornerLen, ch - pad); ctx.lineTo(cw - pad, ch - pad); ctx.lineTo(cw - pad, ch - pad - cornerLen);
     ctx.stroke();
 
-    // Center circular reticle
-    ctx.strokeStyle = 'rgba(0, 210, 255, 0.35)';
-    ctx.beginPath();
-    ctx.arc(boresightX, boresightY, 8, 0, Math.PI * 2);
-    ctx.stroke();
+    // Scale tick marks along horizontal and vertical axes
+    ctx.strokeStyle = 'rgba(0, 210, 255, 0.22)';
+    ctx.lineWidth = 0.8;
+    for (let x = 64; x < W; x += 64) {
+      const dx = toDisplayX(x);
+      ctx.beginPath(); ctx.moveTo(dx, pad); ctx.lineTo(dx, pad + 5); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(dx, ch - pad - 5); ctx.lineTo(dx, ch - pad); ctx.stroke();
+    }
+    for (let y = 48; y < H; y += 48) {
+      const dy = toDisplayY(y);
+      ctx.beginPath(); ctx.moveTo(pad, dy); ctx.lineTo(pad + 5, dy); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cw - pad - 5, dy); ctx.lineTo(cw - pad, dy); ctx.stroke();
+    }
     ctx.restore();
 
-    // 2. Tracking Target & Centroid Reticle
+    // 2. Camera Optical Crosshair Reticle & Boresight Center (+) at (320, 240)
+    const boresightX = toDisplayX(320);
+    const boresightY = toDisplayY(240);
+
+    ctx.save();
+    // Full-span faint crosshair axes
+    ctx.strokeStyle = 'rgba(0, 210, 255, 0.2)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(0, boresightY); ctx.lineTo(cw, boresightY);
+    ctx.moveTo(boresightX, 0); ctx.lineTo(boresightX, ch);
+    ctx.stroke();
+
+    // Boresight Center Marker (+)
+    const crossSize = Math.round(15 * uiScale);
+    ctx.strokeStyle = '#00d2ff';
+    ctx.lineWidth = Math.max(1.4, 1.6 * uiScale);
+    ctx.beginPath();
+    ctx.moveTo(boresightX - crossSize, boresightY); ctx.lineTo(boresightX + crossSize, boresightY);
+    ctx.moveTo(boresightX, boresightY - crossSize); ctx.lineTo(boresightX, boresightY + crossSize);
+    ctx.stroke();
+
+    // Boresight box [ + ]
+    const boxR = Math.round(12 * uiScale);
+    ctx.strokeStyle = 'rgba(0, 210, 255, 0.65)';
+    ctx.lineWidth = 1.1;
+    ctx.strokeRect(boresightX - boxR, boresightY - boxR, boxR * 2, boxR * 2);
+
+    // Boresight Label
+    ctx.fillStyle = 'rgba(0, 210, 255, 0.75)';
+    ctx.font = `${Math.max(9, Math.round(9.5 * uiScale))}px "JetBrains Mono", monospace`;
+    ctx.fillText('BORESIGHT (320, 240)', boresightX + boxR + 5, boresightY + 3);
+    ctx.restore();
+
+    // 3. Tracking Target, Centroid Reticle, Detection Brackets & Kalman Prediction
     const trk = SimulationState.tracking;
     const detX = trk.detectedX;
     const detY = trk.detectedY;
+    const isDetected = detX !== null && detY !== null;
 
-    if (detX !== null && detY !== null) {
+    if (isDetected) {
       const cx = toDisplayX(detX);
       const cy = toDisplayY(detY);
-      const boxSize = 24 * scaleX;
+      const boxSize = Math.max(22, (SimulationState.target.size || 10) * uiScale * 2.4);
 
       ctx.save();
-      // Tracking bounding box color reflects state
-      const stateColor = (trackingResult && trackingResult.metadata)
-        ? trackingResult.metadata.color
-        : '#00e676';
+      // Tracking color reflects state
+      let stateColor = '#00e676'; // Default green (Locked/Track)
+      if (trk.state === 'SEARCH' || trk.state === 'SEARCHING') stateColor = '#ffab00';
+      else if (trk.state === 'ACQUIRING') stateColor = '#00d2ff';
+      else if (trk.state === 'LOST') stateColor = '#ff1744';
 
+      // A. Detection Brackets [ ◉ ]
       ctx.strokeStyle = stateColor;
-      ctx.lineWidth = 1.6;
-      ctx.strokeRect(cx - boxSize / 2, cy - boxSize / 2, boxSize, boxSize);
-
-      // Target Label
-      ctx.fillStyle = stateColor;
-      ctx.font = '10px "JetBrains Mono", monospace';
-      ctx.fillText(SimulationState.target.id || 'T1', cx - boxSize / 2, cy - boxSize / 2 - 5);
-
-      // Centroid red plus reticle
-      ctx.strokeStyle = '#ff1744';
-      ctx.lineWidth = 1.4;
+      ctx.lineWidth = Math.max(1.6, 2.0 * uiScale);
+      const bLen = boxSize * 0.35;
+      const halfB = boxSize / 2;
+      // Top-Left bracket
       ctx.beginPath();
-      ctx.moveTo(cx - 7, cy);
-      ctx.lineTo(cx + 7, cy);
-      ctx.moveTo(cx, cy - 7);
-      ctx.lineTo(cx, cy + 7);
+      ctx.moveTo(cx - halfB, cy - halfB + bLen); ctx.lineTo(cx - halfB, cy - halfB); ctx.lineTo(cx - halfB + bLen, cy - halfB);
+      // Top-Right bracket
+      ctx.moveTo(cx + halfB - bLen, cy - halfB); ctx.lineTo(cx + halfB, cy - halfB); ctx.lineTo(cx + halfB, cy - halfB + bLen);
+      // Bottom-Left bracket
+      ctx.moveTo(cx - halfB, cy + halfB - bLen); ctx.lineTo(cx - halfB, cy + halfB); ctx.lineTo(cx - halfB + bLen, cy + halfB);
+      // Bottom-Right bracket
+      ctx.moveTo(cx + halfB - bLen, cy + halfB); ctx.lineTo(cx + halfB, cy + halfB); ctx.lineTo(cx + halfB, cy + halfB - bLen);
       ctx.stroke();
 
-      // 3. Error Vector: Vector connecting Camera Boresight (+) to Target Centroid (●)
+      // B. Centroid Plus Reticle (+)
+      const cRetSize = Math.round(6 * uiScale);
+      ctx.strokeStyle = '#ff1744';
+      ctx.lineWidth = Math.max(1.4, 1.6 * uiScale);
+      ctx.beginPath();
+      ctx.moveTo(cx - cRetSize, cy); ctx.lineTo(cx + cRetSize, cy);
+      ctx.moveTo(cx, cy - cRetSize); ctx.lineTo(cx, cy + cRetSize);
+      ctx.stroke();
+
+      // Small central red centroid dot
+      ctx.fillStyle = '#ff1744';
+      ctx.beginPath();
+      ctx.arc(cx, cy, Math.max(2, 2.2 * uiScale), 0, Math.PI * 2);
+      ctx.fill();
+
+      // C. Target Identifier & Confidence Badge
+      ctx.fillStyle = stateColor;
+      ctx.font = `${Math.max(9, Math.round(10 * uiScale))}px "JetBrains Mono", monospace`;
+      ctx.fillText(`${SimulationState.target.id || 'T1'}: BEACON`, cx - halfB, cy - halfB - 4);
+
+      if (trk.confidence !== null) {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+        ctx.font = `${Math.max(8, Math.round(8.5 * uiScale))}px "JetBrains Mono", monospace`;
+        ctx.fillText(`C: ${trk.confidence.toFixed(2)}`, cx + halfB - 34, cy - halfB - 4);
+      }
+
+      // D. Geometric Pointing Error / LOS Vector connecting Boresight (+) to Target Centroid (●)
       if (showVector) {
-        ctx.strokeStyle = '#ffab00'; // Amber vector
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([3, 3]);
+        const dxPx = detX - 320;
+        const dyPx = detY - 240;
+        const pErr = Math.sqrt(dxPx * dxPx + dyPx * dyPx);
+        const cam = SimulationState.camera;
+        const dxDeg = (dxPx / 640) * cam.fovH;
+        const dyDeg = (dyPx / 480) * cam.fovV;
+        const angErrMdeg = Math.sqrt(dxDeg * dxDeg + dyDeg * dyDeg) * 1000;
+
+        let vecColor = '#00e676';
+        if (pErr > 25 || angErrMdeg > 62.5) vecColor = '#ffab00';
+        if (pErr > 60) vecColor = '#ff1744';
+
+        ctx.strokeStyle = vecColor;
+        ctx.lineWidth = Math.max(1.5, 1.8 * uiScale);
+        ctx.setLineDash([Math.round(5 * uiScale), Math.round(4 * uiScale)]);
         ctx.beginPath();
         ctx.moveTo(boresightX, boresightY);
         ctx.lineTo(cx, cy);
         ctx.stroke();
         ctx.setLineDash([]);
 
-        // Small beacon centroid dot
-        ctx.fillStyle = '#ff1744';
-        ctx.beginPath();
-        ctx.arc(cx, cy, 3, 0, Math.PI * 2);
-        ctx.fill();
+        // Dynamic Vector Readout Badge at midpoint
+        if (pErr > 4) {
+          const midX = (boresightX + cx) / 2;
+          const midY = (boresightY + cy) / 2;
+          const badgeText = `${pErr.toFixed(1)}px (${angErrMdeg.toFixed(1)}mdeg)`;
+          const bWidth = Math.round(98 * uiScale);
+          const bHeight = Math.round(18 * uiScale);
 
-        // Error distance label at midpoint
-        const midX = (boresightX + cx) / 2;
-        const midY = (boresightY + cy) / 2;
-        const pErr = Math.sqrt(Math.pow(detX - 320, 2) + Math.pow(detY - 240, 2));
+          ctx.fillStyle = 'rgba(3, 7, 18, 0.9)';
+          ctx.strokeStyle = vecColor;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.roundRect(midX - bWidth / 2, midY - bHeight / 2, bWidth, bHeight, 3);
+          ctx.fill();
+          ctx.stroke();
 
-        if (pErr > 3) {
-          ctx.fillStyle = 'rgba(7, 13, 24, 0.85)';
-          ctx.fillRect(midX - 22, midY - 9, 44, 16);
-          ctx.strokeStyle = '#ffab00';
-          ctx.lineWidth = 0.8;
-          ctx.strokeRect(midX - 22, midY - 9, 44, 16);
-
-          ctx.fillStyle = '#ffab00';
-          ctx.font = '9px "JetBrains Mono", monospace';
-          ctx.fillText(`${pErr.toFixed(1)}px`, midX - 18, midY + 3);
+          ctx.fillStyle = '#ffffff';
+          ctx.font = `${Math.max(8.5, Math.round(9 * uiScale))}px "JetBrains Mono", monospace`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(badgeText, midX, midY);
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'alphabetic';
         }
       }
+
+      // E. Kalman Prediction Marker & Uncertainty Region (if available)
+      if (trackingResult && trackingResult.predictedX !== undefined && trackingResult.predictedX !== null) {
+        const predX = toDisplayX(trackingResult.predictedX);
+        const predY = toDisplayY(trackingResult.predictedY);
+
+        // Dashed prediction ring
+        ctx.strokeStyle = 'rgba(179, 136, 255, 0.85)';
+        ctx.lineWidth = Math.max(1.2, 1.4 * uiScale);
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.arc(predX, predY, Math.round(7 * uiScale), 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Prediction label
+        ctx.fillStyle = 'rgba(179, 136, 255, 0.9)';
+        ctx.font = `${Math.max(8, Math.round(8.5 * uiScale))}px "JetBrains Mono", monospace`;
+        ctx.fillText('PRED (k+1)', predX + Math.round(9 * uiScale), predY + 3);
+      }
+
+      // F. Proximity to FOV Edge Warning
+      if (detX < 35 || detX > 605 || detY < 30 || detY > 450) {
+        ctx.fillStyle = 'rgba(255, 171, 0, 0.95)';
+        ctx.font = `${Math.max(10, Math.round(11 * uiScale))}px "JetBrains Mono", monospace`;
+        ctx.fillText('⚠ APPROACHING FOV BOUNDARY', cw / 2 - Math.round(90 * uiScale), Math.round(42 * uiScale));
+      }
+
+      ctx.restore();
+    } else {
+      // Out-of-FOV or Searching Notice
+      ctx.save();
+      const isRunning = SimulationState.simulation.status === 'RUNNING';
+      ctx.fillStyle = isRunning ? 'rgba(255, 61, 0, 0.9)' : 'rgba(0, 210, 255, 0.7)';
+      ctx.font = `${Math.max(10, Math.round(11 * uiScale))}px "JetBrains Mono", monospace`;
+      const statusNotice = isRunning
+        ? '⚠ BEACON ACQUISITION IN PROGRESS — SEARCHING FOV'
+        : '○ OPTICAL CAMERA READY — AWAITING SIMULATION START';
+      ctx.fillText(statusNotice, Math.max(15, cw / 2 - Math.round(150 * uiScale)), ch / 2 - Math.round(20 * uiScale));
       ctx.restore();
     }
 
-    // 4. Header Specs Overlay (Top)
+    // 4. Top HUD Header Bar
+    const topHudH = Math.round(22 * Math.max(1, uiScale));
     ctx.save();
-    ctx.fillStyle = 'rgba(6, 12, 22, 0.85)';
-    ctx.fillRect(0, 0, cw, 22);
-    ctx.strokeStyle = '#122540';
+    ctx.fillStyle = 'rgba(3, 7, 18, 0.88)';
+    ctx.fillRect(0, 0, cw, topHudH);
+    ctx.strokeStyle = 'rgba(21, 41, 69, 0.85)';
     ctx.lineWidth = 1;
-    ctx.strokeRect(0, 0, cw, 22);
+    ctx.beginPath(); ctx.moveTo(0, topHudH); ctx.lineTo(cw, topHudH); ctx.stroke();
 
-    ctx.fillStyle = '#90a4ae';
-    ctx.font = '10px "Inter", monospace';
-    const headerText = '640 x 480  |  Monochrome (FPA)  |  FOV: 4.0° x 3.0°  |  30 Hz';
-    ctx.fillText(headerText, 10, 15);
+    ctx.fillStyle = 'rgba(226, 232, 240, 0.95)';
+    ctx.font = `${Math.max(9, Math.round(9.5 * uiScale))}px "JetBrains Mono", monospace`;
+    const cam = SimulationState.camera;
+    const panStr = `${cam.pan >= 0 ? '+' : ''}${cam.pan.toFixed(2)}°`;
+    const tiltStr = `${cam.tilt >= 0 ? '+' : ''}${cam.tilt.toFixed(2)}°`;
+    ctx.fillText(`CAM FPA: 640×480 | FOV: 4.0°×3.0° | P: ${panStr} T: ${tiltStr}`, 10, topHudH - 7);
 
-    // State pill at top right of camera view
-    if (trackingResult && trackingResult.metadata) {
-      const meta = trackingResult.metadata;
-      ctx.fillStyle = meta.color;
-      ctx.font = '10px "JetBrains Mono", monospace';
-      ctx.fillText(`● ${meta.label}`, cw - 150, 15);
-    }
+    // Active state pill at top-right
+    let st = trk.state || (SimulationState.simulation.status === 'RUNNING' ? 'SEARCH' : 'READY');
+    let stCol = '#00e676';
+    if (st === 'LOST') stCol = '#ff1744';
+    else if (st === 'SEARCH' || st === 'SEARCHING') stCol = '#ffab00';
+    else if (st === 'ACQUIRING') stCol = '#00d2ff';
+
+    ctx.fillStyle = stCol;
+    ctx.font = `${Math.max(9, Math.round(9.5 * uiScale))}px "JetBrains Mono", monospace`;
+    ctx.fillText(`● ${st}`, cw - Math.round(85 * uiScale), topHudH - 7);
     ctx.restore();
 
-    // 5. Footer HUD Status (Bottom)
+    // 5. Bottom HUD Footer Bar
+    const botHudH = Math.round(20 * Math.max(1, uiScale));
     ctx.save();
-    ctx.fillStyle = 'rgba(6, 12, 22, 0.85)';
-    ctx.fillRect(0, ch - 22, cw, 22);
-    ctx.strokeStyle = '#122540';
+    ctx.fillStyle = 'rgba(3, 7, 18, 0.88)';
+    ctx.fillRect(0, ch - botHudH, cw, botHudH);
+    ctx.strokeStyle = 'rgba(21, 41, 69, 0.85)';
     ctx.lineWidth = 1;
-    ctx.strokeRect(0, ch - 22, cw, 22);
+    ctx.beginPath(); ctx.moveTo(0, ch - botHudH); ctx.lineTo(cw, ch - botHudH); ctx.stroke();
 
-    ctx.fillStyle = '#78909c';
-    ctx.font = '10px "JetBrains Mono", monospace';
+    ctx.fillStyle = 'rgba(143, 163, 191, 0.9)';
+    ctx.font = `${Math.max(8.5, Math.round(9 * uiScale))}px "JetBrains Mono", monospace`;
     const fStr = String(frameIndex || 0).padStart(5, '0');
-    const tStr = `${(elapsedTime || 0).toFixed(2)} s`;
-    ctx.fillText(`Frame: ${fStr}   Time: ${tStr}`, 10, ch - 7);
+    const tStr = `${(elapsedTime || 0).toFixed(2)}s`;
+    ctx.fillText(`FRM: ${fStr} | TIME: ${tStr}`, 10, ch - 6);
 
-    // Centroid coordinate readout at bottom right
-    if (detX !== null && detY !== null) {
-      ctx.fillStyle = '#cfd8dc';
-      ctx.fillText(`Centroid: (${detX.toFixed(1)}, ${detY.toFixed(1)}) px`, cw - 200, ch - 7);
+    const met = SimulationState.metrics;
+    if (met.instantaneousPointingError !== null && met.instantaneousAngularPointingErrorMdeg !== null) {
+      ctx.fillStyle = '#00d2ff';
+      ctx.fillText(`POINT ERR: ${met.instantaneousPointingError.toFixed(1)}px | ANG ERR: ${met.instantaneousAngularPointingErrorMdeg.toFixed(1)}mdeg`, cw - Math.round(220 * uiScale), ch - 6);
     } else {
-      ctx.fillStyle = '#78909c';
-      ctx.fillText('Centroid: (—, —)', cw - 150, ch - 7);
+      ctx.fillStyle = 'rgba(143, 163, 191, 0.7)';
+      ctx.fillText('POINT ERR: — | ANG ERR: —', cw - Math.round(160 * uiScale), ch - 6);
     }
     ctx.restore();
   }

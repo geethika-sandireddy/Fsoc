@@ -12,649 +12,293 @@
 <body>
 
   <!-- =========================================================================
-       1. Top Mission Header Bar (ISRO / DOS PS-26169)
+       Main 2-Column Continuous Workspace Layout: Sidebar Navigation | Continuous Center Workspace
        ========================================================================= -->
-  <header class="header-bar">
-    <div class="header-left">
-      <div class="isro-logo-badge">
-        <svg class="isro-delta" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <polygon points="50,5 95,90 5,90" stroke="#ff9933" stroke-width="6" fill="rgba(255,153,51,0.12)"/>
-          <path d="M50,15 L78,80 L22,80 Z" fill="#00d2ff"/>
-          <circle cx="50" cy="55" r="11" fill="#ffffff"/>
-          <line x1="10" y1="90" x2="90" y2="90" stroke="#ff9933" stroke-width="4"/>
-        </svg>
-        <div class="isro-text-bilingual">
-          <span class="isro-hi">इसरो isro</span>
-          <span class="isro-en">ISRO · DOS</span>
-        </div>
-      </div>
-      <div class="header-org-info">
-        <div class="header-org-title">Indian Space Research Organisation</div>
-        <div class="header-org-dept">Department of Space · Government of India</div>
-        <div class="header-motto-sub">For a Secure and Advanced Nation</div>
-      </div>
-    </div>
+  <div class="app-container" id="app-container">
 
-    <div class="header-center">
-      <div class="header-main-title">AI-BASED VIRTUAL CAMERA TRACKING SYSTEM</div>
-      <div class="header-subtitle">for Coarse Alignment of Mobile Free Space Optical Communication (FSOC) Terminals</div>
-      <div class="header-meta-tags">
-        <span class="meta-tag">PS ID: 26169</span>
-        <span class="meta-sep">|</span>
-        <span class="meta-tag">Category: Software</span>
-        <span class="meta-sep">|</span>
-        <span class="meta-tag">Theme: Smart Automation, Space Technology</span>
-      </div>
-    </div>
-
-    <div class="header-right">
-      <div class="header-satellite-badge">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#00d2ff" stroke-width="1.8">
-          <circle cx="12" cy="12" r="3" fill="#00d2ff"/>
-          <path d="M4.93 4.93l4.24 4.24M14.83 14.83l4.24 4.24M19.07 4.93l-4.24 4.24M9.17 14.83l-4.24 4.24"/>
-          <path d="M2 12h3M19 12h3M12 2v3M12 19v3"/>
-        </svg>
-        <div class="header-tagline">
-          <span class="tagline-primary">Free Space Optical Comm</span>
-          <span class="tagline-secondary">Enables a Brighter Tomorrow</span>
-        </div>
+    <!-- Left Sidebar: Starts Collapsed (Icons only) and Expands on Toggle -->
+    <nav class="sidebar collapsed" id="sidebar">
+      <div class="sidebar-toggle-row">
+        <button class="btn-sidebar-toggle" id="btn-sidebar-toggle" title="Toggle Navigation Menu">☰</button>
+        <span class="sidebar-brand-text">FSOC WORKSTATION</span>
       </div>
 
-      <div class="header-status-column">
-        <div class="header-clock-box" id="header-clock">18 Sep 2026 15:45:00</div>
-        <div class="status-badge active" id="header-sim-status">
-          <span class="status-dot"></span>
-          <span id="header-sim-status-text">Simulation Active</span>
-        </div>
-      </div>
-    </div>
-  </header>
-
-  <!-- =========================================================================
-       2. Top Global Telemetry Strip (Visible across all workspaces)
-       ========================================================================= -->
-  <div class="top-kpi-strip">
-    <div class="kpi-strip-card">
-      <div class="kpi-icon-circle blue">
-        <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2">
-          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-        </svg>
-      </div>
-      <div class="kpi-strip-details">
-        <div class="kpi-strip-label">Simulation Time</div>
-        <div class="kpi-strip-value" id="kpi-top-sim-time">00:00:00</div>
-        <div class="kpi-strip-sub" id="kpi-top-frame">Frame: 00000</div>
-      </div>
-    </div>
-
-    <div class="kpi-strip-card">
-      <div class="kpi-icon-circle green">
-        <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2">
-          <polygon points="12 2 2 22 22 22"/><circle cx="12" cy="15" r="2"/>
-        </svg>
-      </div>
-      <div class="kpi-strip-details">
-        <div class="kpi-strip-label">Camera FOV</div>
-        <div class="kpi-strip-value" id="kpi-top-fov">4.0° × 3.0°</div>
-        <div class="kpi-strip-sub">640 × 480 FPA</div>
-      </div>
-    </div>
-
-    <div class="kpi-strip-card">
-      <div class="kpi-icon-circle cyan">
-        <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2">
-          <circle cx="12" cy="12" r="10"/><line x1="22" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="2" y2="12"/><line x1="12" y1="6" x2="12" y2="2"/><line x1="12" y1="22" x2="12" y2="18"/>
-        </svg>
-      </div>
-      <div class="kpi-strip-details">
-        <div class="kpi-strip-label">Camera Orientation</div>
-        <div class="kpi-strip-value" id="kpi-top-cam-pos">Pan: 0.00° Tilt: 0.00°</div>
-        <div class="kpi-strip-sub">Station (1000, 480)</div>
-      </div>
-    </div>
-
-    <div class="kpi-strip-card">
-      <div class="kpi-icon-circle red">
-        <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2">
-          <circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/>
-        </svg>
-      </div>
-      <div class="kpi-strip-details">
-        <div class="kpi-strip-label">Active Target</div>
-        <div class="kpi-strip-value" id="kpi-top-target">T1 – Beacon</div>
-        <div class="kpi-strip-sub" id="kpi-top-range">Range: 5.0 km</div>
-      </div>
-    </div>
-
-    <div class="kpi-strip-card">
-      <div class="kpi-icon-circle emerald">
-        <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2">
-          <circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>
-        </svg>
-      </div>
-      <div class="kpi-strip-details">
-        <div class="kpi-strip-label">Tracking State</div>
-        <div class="kpi-strip-value status-text-tracking" id="kpi-top-tracking-status">Tracking</div>
-        <div class="kpi-strip-sub" id="kpi-top-conf">Confidence: 0.92</div>
-      </div>
-    </div>
-
-    <div class="kpi-strip-card">
-      <div class="kpi-icon-circle purple">
-        <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2">
-          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/>
-          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>
-        </svg>
-      </div>
-      <div class="kpi-strip-details">
-        <div class="kpi-strip-label">Optical Link Status</div>
-        <div class="kpi-strip-value status-text-aligned" id="kpi-top-link-status">Aligned</div>
-        <div class="kpi-strip-sub" id="kpi-top-ber">BER: 1.2 × 10⁻⁵</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- =========================================================================
-       3. Main Layout: Strictly 10 Sidebar Workspaces
-       ========================================================================= -->
-  <div class="app-container">
-
-    <!-- Left Sidebar: EXACTLY 10 Dedicated Workspaces -->
-    <nav class="sidebar">
       <div class="sidebar-nav-list">
-        <a class="nav-item active" data-view="home">
-          <span class="nav-icon">
-            <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2">
-              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-            </svg>
-          </span>
-          <span class="nav-text">Home / Dashboard</span>
+        <!-- SETUP GROUP -->
+        <div class="sidebar-group-header">SETUP</div>
+
+        <a class="nav-item active" data-view="virtual-env" title="Virtual Environment">
+          <div class="nav-item-left">
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
+                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+              </svg>
+            </span>
+            <span class="nav-text">Virtual Environment</span>
+          </div>
         </a>
 
-        <a class="nav-item" data-view="virtual-env">
-          <span class="nav-icon">
-            <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
-              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-            </svg>
-          </span>
-          <span class="nav-text">Virtual Environment</span>
+        <a class="nav-item" data-view="targets" title="Optical Targets">
+          <div class="nav-item-left">
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
+              </svg>
+            </span>
+            <span class="nav-text">Targets</span>
+          </div>
         </a>
 
-        <a class="nav-item" data-view="targets">
-          <span class="nav-icon">
-            <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>
-            </svg>
-          </span>
-          <span class="nav-text">Targets</span>
+        <a class="nav-item" data-view="camera" title="Camera & Pan-Tilt">
+          <div class="nav-item-left">
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>
+              </svg>
+            </span>
+            <span class="nav-text">Camera & Pan-Tilt</span>
+          </div>
         </a>
 
-        <a class="nav-item" data-view="camera">
-          <span class="nav-icon">
-            <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2">
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>
-            </svg>
-          </span>
-          <span class="nav-text">Camera & Pan-Tilt</span>
+        <a class="nav-item" data-view="disturbances" title="Disturbances & Noise">
+          <div class="nav-item-left">
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2">
+                <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/><polygon points="13 11 9 17 14 17 11 23 18 15 13 15 15 11" fill="currentColor"/>
+              </svg>
+            </span>
+            <span class="nav-text">Disturbances & Noise</span>
+          </div>
         </a>
 
-        <a class="nav-item" data-view="disturbances">
-          <span class="nav-icon">
-            <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2">
-              <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/><polygon points="13 11 9 17 14 17 11 23 18 15 13 15 15 11" fill="currentColor"/>
-            </svg>
-          </span>
-          <span class="nav-text">Disturbances & Noise</span>
+        <a class="nav-item" data-view="detection" title="Detection & Tracking">
+          <div class="nav-item-left">
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
+              </svg>
+            </span>
+            <span class="nav-text">Detection & Tracking</span>
+          </div>
         </a>
 
-        <a class="nav-item" data-view="detection">
-          <span class="nav-icon">
-            <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2">
-              <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
-            </svg>
-          </span>
-          <span class="nav-text">Detection & Tracking</span>
+        <!-- RUN GROUP -->
+        <div class="sidebar-group-header">RUN</div>
+
+        <a class="nav-item" data-view="sim-control" title="Simulation Control">
+          <div class="nav-item-left">
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2">
+                <polygon points="5 3 19 12 5 21 5 3"/>
+              </svg>
+            </span>
+            <span class="nav-text">Simulation Control</span>
+          </div>
         </a>
 
-        <a class="nav-item" data-view="sim-control">
-          <span class="nav-icon">
-            <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2">
-              <polygon points="5 3 19 12 5 21 5 3"/>
-            </svg>
-          </span>
-          <span class="nav-text">Simulation Control</span>
+        <a class="nav-item" data-view="live-tracking" title="Live Tracking & Benchmark-2">
+          <div class="nav-item-left">
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+            </span>
+            <span class="nav-text">Live Tracking HUD</span>
+          </div>
         </a>
 
-        <a class="nav-item" data-view="live-tracking">
-          <span class="nav-icon">
-            <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2">
-              <path d="M4.9 19.1C1 15.2 1 8.8 4.9 4.9"/><path d="M7.8 16.2c-2.3-2.3-2.3-6.1 0-8.5"/><circle cx="12" cy="12" r="2"/><path d="M16.2 7.8c2.3 2.3 2.3 6.1 0 8.5"/><path d="M19.1 4.9C23 8.8 23 15.2 19.1 19.1"/>
-            </svg>
-          </span>
-          <span class="nav-text">Live Tracking</span>
+        <!-- ANALYZE GROUP -->
+        <div class="sidebar-group-header">ANALYZE</div>
+
+        <a class="nav-item" data-view="performance" title="Performance Analysis">
+          <div class="nav-item-left">
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2">
+                <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+              </svg>
+            </span>
+            <span class="nav-text">Performance Analysis</span>
+          </div>
         </a>
 
-        <a class="nav-item" data-view="performance">
-          <span class="nav-icon">
-            <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2">
-              <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
-            </svg>
-          </span>
-          <span class="nav-text">Performance & Analysis</span>
-        </a>
-
-        <a class="nav-item" data-view="reports">
-          <span class="nav-icon">
-            <svg viewBox="0 0 24 24" width="15" height="15" stroke="currentColor" fill="none" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
-            </svg>
-          </span>
-          <span class="nav-text">Reports & Logs</span>
+        <a class="nav-item" data-view="reports" title="Reports & Logs">
+          <div class="nav-item-left">
+            <span class="nav-icon">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" fill="none" stroke-width="2">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+              </svg>
+            </span>
+            <span class="nav-text">Reports & Logs</span>
+          </div>
         </a>
       </div>
 
       <div class="sidebar-footer">
-        <div class="earth-horizon-art">
-          <svg viewBox="0 0 160 45" width="100%" height="35" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="earthGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stop-color="#00d2ff" stop-opacity="0.7"/>
-                <stop offset="35%" stop-color="#0044aa" stop-opacity="0.85"/>
-                <stop offset="100%" stop-color="#020814" stop-opacity="1"/>
-              </linearGradient>
-            </defs>
-            <path d="M0,45 Q80,5 160,45 Z" fill="url(#earthGrad)"/>
-            <path d="M0,45 Q80,5 160,45" stroke="#00d2ff" stroke-width="1.2" fill="none"/>
-          </svg>
-        </div>
-        <div class="sidebar-motto-text">Space Technology<br>for a Better Tomorrow</div>
+        <div class="sidebar-motto-text">ISRO · Space Terminal Tracking</div>
       </div>
     </nav>
 
-    <!-- Central Dedicated Workspaces -->
+    <!-- Center Main Workspace: Continuous Scrolling Workstation -->
     <main class="main-workspace">
 
       <!-- =====================================================================
-           VIEW 1: Home / Dashboard (MISSION CONTROL DASHBOARD)
-           Answers: "WHAT IS THE SYSTEM DOING RIGHT NOW?"
+           VIEW: VIRTUAL ENVIRONMENT
            ===================================================================== -->
-      <section id="view-home" class="view-section">
+      <section id="view-virtual-env" class="view-section">
         <div class="workbench-header">
-          <div class="workbench-title">MISSION CONTROL DASHBOARD</div>
-          <div class="workbench-desc">Real-time system telemetry, mission status overview, active link health, and operational alerts.</div>
+          <div class="workbench-header-left">
+            <div class="workbench-title">CONFIGURE 2D VIRTUAL SPACE ENVIRONMENT</div>
+            <div class="workbench-desc">Establish the 2000×2000 pixel simulation arena, coordinate axes, starfield density, and camera position.</div>
+          </div>
+          <button class="btn btn-action btn-ps-modal-trigger" data-ps-section="environment">📋 PS REQUIREMENTS</button>
         </div>
 
-        <!-- Top Live Visualizations (Global Environment + Live Sensor Frame) -->
-        <div class="dash-overview-grid">
-          <!-- Left: Compact Global Scene View -->
-          <div class="dash-card">
-            <div class="dash-card-header">
-              <span class="dash-card-title">🌐 Global Mission Environment (Top View)</span>
-              <span class="panel-badge">2000 × 2000 px Coordinate Space</span>
-            </div>
-            <div class="dash-card-body no-pad">
-              <div class="env-viewport-wrapper" style="height: 240px;">
-                <canvas id="home-env-canvas" width="540" height="240"></canvas>
-                <div class="env-legend-overlay">
-                  <div class="legend-item"><span class="legend-box green"></span> Terminal (You)</div>
-                  <div class="legend-item"><span class="legend-box red"></span> Target (T1)</div>
-                  <div class="legend-item"><span class="legend-line blue"></span> Camera FOV</div>
-                  <div class="legend-item"><span class="legend-line dashed-yellow"></span> Line of Sight</div>
-                </div>
-              </div>
-              <div class="canvas-controls-bar">
-                <span style="font-family: var(--font-mono); color: var(--text-secondary); font-size: 9px;">Terminal Origin: (1000, 480) | World Limits: [0..2000, 0..2000]</span>
-                <span class="status-pill-small" style="font-size: 8.5px;">BOUNDARIES ENFORCED</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Right: Live Optical Camera View -->
-          <div class="dash-card">
-            <div class="dash-card-header">
-              <span class="dash-card-title">📷 Live Optical Sensor Frame (FPA Feed)</span>
-              <span class="panel-info-text">640 × 480 Monochrome FPA (30 Hz)</span>
-            </div>
-            <div class="dash-card-body no-pad">
-              <div class="cam-viewport-wrapper" style="height: 240px;">
-                <canvas id="home-cam-canvas" width="540" height="240"></canvas>
-              </div>
-              <div class="cam-telemetry-bar">
-                <span>Pan: <strong id="cam-bar-pan" class="cyan-val">0.00°</strong></span>
-                <span>Tilt: <strong id="cam-bar-tilt" class="green-val">0.00°</strong></span>
-                <span>Zoom: <strong id="cam-bar-zoom" class="white-val">1.0x</strong></span>
-                <span>Boresight Error: <strong id="dash-err-readout" class="cyan-val">0.0 px</strong></span>
-              </div>
-            </div>
-          </div>
+        <div class="concept-notice-banner">
+          <span>ℹ</span>
+          <span><strong>Engineering Concept:</strong> The virtual space arena provides the absolute ground-truth coordinate reference frame for optical beacon trajectory modeling and camera FOV projection.</span>
         </div>
 
-        <!-- Mission KPI Summary Cards Row -->
-        <div class="dash-kpi-row">
-          <div class="dash-kpi-box">
-            <div class="dkpi-title">Tracking Error (RMS)</div>
-            <div class="dkpi-value cyan" id="kpi-dash-rmse">0.0 px</div>
-            <div class="dkpi-sub">Threshold: ≤ 10 px</div>
-          </div>
-          <div class="dash-kpi-box">
-            <div class="dkpi-title">Tracking Confidence</div>
-            <div class="dkpi-value green" id="kpi-dash-conf">0.92</div>
-            <div class="dkpi-sub">High Integrity Lock</div>
-          </div>
-          <div class="dash-kpi-box">
-            <div class="dkpi-title">Simulation FPS</div>
-            <div class="dkpi-value" id="kpi-dash-fps">30.0</div>
-            <div class="dkpi-sub">Loop Rate: 30 Hz</div>
-          </div>
-          <div class="dash-kpi-box">
-            <div class="dkpi-title">Acquisition Time</div>
-            <div class="dkpi-value" id="kpi-dash-acq">1.32 s</div>
-            <div class="dkpi-sub">Benchmark: ≤ 2.0 s</div>
-          </div>
-          <div class="dash-kpi-box">
-            <div class="dkpi-title">Target Loss Rate</div>
-            <div class="dkpi-value" id="kpi-dash-loss">1.2 %</div>
-            <div class="dkpi-sub">Benchmark: &lt; 5.0 %</div>
-          </div>
-          <div class="dash-kpi-box">
-            <div class="dkpi-title">Lock Retention Rate</div>
-            <div class="dkpi-value green" id="kpi-dash-lock">98.3 %</div>
-            <div class="dkpi-sub">Continuous Track</div>
-          </div>
-        </div>
-
-        <!-- Bottom Row: Subsystem Health Matrix + Live Position Telemetry Graph + Recent Alerts -->
-        <div class="dash-bottom-grid">
-          <!-- System Health Summary -->
-          <div class="dash-card">
-            <div class="dash-card-header">
-              <span class="dash-card-title">🔘 Subsystem Health Status</span>
-              <span class="link-state-pill" id="dash-link-pill">● Link Aligned</span>
-            </div>
-            <div class="dash-card-body">
-              <div class="subsystem-health-grid">
-                <div class="health-item"><span class="led-dot green"></span> Virtual Environment: Ready</div>
-                <div class="health-item"><span class="led-dot green"></span> Target Generator: Active (T1)</div>
-                <div class="health-item"><span class="led-dot green"></span> Sensor Optics: Calibrated</div>
-                <div class="health-item"><span class="led-dot green"></span> Gimbal Pan-Tilt: 20 Hz Slew</div>
-                <div class="health-item"><span class="led-dot green"></span> Disturbance Engine: Nominal</div>
-                <div class="health-item"><span class="led-dot green"></span> Detection & Tracking: Locked</div>
-                <div class="health-item"><span class="led-dot green"></span> Simulation Executive: Nominal</div>
-              </div>
-              <div class="quick-nav-hint">
-                To configure subsystems, use the dedicated workspace tabs in the left navigation sidebar.
-              </div>
-            </div>
-          </div>
-
-          <!-- Real-Time Centroid Error Sparkline -->
-          <div class="dash-card">
-            <div class="dash-card-header">
-              <span class="dash-card-title">📊 Live Centroid Tracking Error vs Time</span>
-              <span class="panel-badge">PS-26169 Reference ≤ 10 px</span>
-            </div>
-            <div class="dash-card-body no-pad">
-              <div class="chart-container-live" style="height: 140px;">
-                <canvas id="chart-pos-spark" width="380" height="140"></canvas>
-              </div>
-            </div>
-          </div>
-
-          <!-- Recent Operational Events -->
-          <div class="dash-card">
-            <div class="dash-card-header">
-              <span class="dash-card-title">📋 Recent Mission Events & Alerts</span>
-            </div>
-            <div class="dash-card-body no-pad">
-              <div class="event-log-scroll" style="height: 140px;">
-                <table class="event-log-table">
-                  <thead>
-                    <tr><th>Time</th><th>Severity</th><th>Event Message</th></tr>
-                  </thead>
-                  <tbody id="dash-event-log-body">
-                    <tr><td>15:45:00</td><td class="log-info">INFO</td><td>Mission Control Workstation Initialized</td></tr>
-                    <tr><td>15:45:01</td><td class="log-info">INFO</td><td>Virtual Environment loaded: 2000 × 2000 px</td></tr>
-                    <tr><td>15:45:02</td><td class="log-success">SUCCESS</td><td>Target T1 acquired in optical boresight</td></tr>
-                    <tr><td>15:45:04</td><td class="log-info">INFO</td><td>Pan-tilt servo active at 20 Hz update rate</td></tr>
-                    <tr><td>15:45:05</td><td class="log-info">INFO</td><td>Telemetry streaming to reports repository</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- =====================================================================
-           VIEW 2: VIRTUAL ENVIRONMENT CONFIGURATION STUDIO
-           Answers: "WHERE IS THE SYSTEM OPERATING?"
-           ===================================================================== -->
-      <section id="view-virtual-env" class="view-section hidden">
-        <div class="workbench-header">
-          <div class="workbench-title">VIRTUAL ENVIRONMENT CONFIGURATION STUDIO</div>
-          <div class="workbench-desc">Configure coordinate dimensions, background starfield density, coordinate bounds (≥ 2000 × 2000 px), and boundary clamping.</div>
-        </div>
-
-        <div class="env-studio-3col">
-          <!-- Left: Parameter Controls -->
+        <div class="workbench-layout-2col">
+          <!-- Left: Environment Parameters -->
           <div class="card-box">
-            <div class="card-box-title">Coordinate Space Parameters</div>
+            <div class="card-box-title">Space Arena Dimensions & Grid Configuration</div>
             <div class="form-row">
-              <label>World Width (px)</label>
-              <input type="number" class="form-input" id="env-width" value="2000" min="2000" max="4000" step="100">
+              <label>Arena Width (px)</label>
+              <input type="number" class="form-input" id="env-width" value="2000" min="2000" max="6000" step="100">
             </div>
             <div class="form-row">
-              <label>World Height (px)</label>
-              <input type="number" class="form-input" id="env-height" value="2000" min="2000" max="4000" step="100">
+              <label>Arena Height (px)</label>
+              <input type="number" class="form-input" id="env-height" value="2000" min="2000" max="6000" step="100">
             </div>
             <div class="form-row">
               <label>Grid Spacing (px)</label>
               <input type="number" class="form-input" id="env-grid-spacing" value="250" min="100" max="500" step="50">
             </div>
             <div class="form-row">
-              <label>Starfield Density</label>
+              <label>Background Star Density</label>
               <input type="number" class="form-input" id="env-star-density" value="200" min="50" max="500" step="25">
             </div>
-            <div class="form-row">
-              <label>Camera Origin X</label>
-              <input type="number" class="form-input" id="env-origin-x" value="1000" readonly>
-            </div>
-            <div class="form-row">
-              <label>Camera Origin Y</label>
-              <input type="number" class="form-input" id="env-origin-y" value="480" readonly>
+
+            <div class="card-box-title" style="margin-top: 12px;">Pre-Configured Environment Presets</div>
+            <div class="btn-group-wrap" style="display: flex; gap: 6px; margin-top: 6px;">
+              <button class="btn btn-action" id="btn-env-preset-nominal">Nominal Space</button>
+              <button class="btn btn-action" id="btn-env-preset-deepspace">Deep Space (Clean)</button>
+              <button class="btn btn-action" id="btn-env-preset-dense">Dense Starfield</button>
             </div>
 
-            <div class="card-box-title" style="margin-top: 14px;">Environment Presets</div>
-            <div class="btn-group-column">
-              <button class="btn btn-action" id="btn-env-preset-deepspace">Deep Space (High Contrast)</button>
-              <button class="btn btn-action" id="btn-env-preset-dense">Dense Starfield Simulation</button>
-              <button class="btn btn-action" id="btn-env-preset-nominal">Nominal PS-26169 Defaults</button>
+            <div class="card-box-title" style="margin-top: 12px;">Visual Layer Toggles</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 4px;">
+              <label class="chk-label"><input type="checkbox" id="chk-env-grid" checked> Grid Lines</label>
+              <label class="chk-label"><input type="checkbox" id="chk-env-axes" checked> Coordinate Axes</label>
+              <label class="chk-label"><input type="checkbox" id="chk-env-fov" checked> Camera FOV Cone</label>
+              <label class="chk-label"><input type="checkbox" id="chk-env-traj" checked> Trajectory Path</label>
             </div>
 
-            <div style="display: flex; gap: 6px; margin-top: 12px;">
-              <button class="btn btn-start" id="btn-apply-env">Apply Changes</button>
-              <button class="btn btn-reset" id="btn-reset-env">Reset Defaults</button>
+            <div style="display: flex; gap: 8px; margin-top: 14px;">
+              <button class="btn btn-start" id="btn-apply-env" style="flex: 1;">Apply Environment</button>
+              <button class="btn btn-reset" id="btn-reset-env">Reset</button>
             </div>
           </div>
 
-          <!-- Center: Large Interactive Environment Canvas -->
+          <!-- Right: World View Studio Canvas -->
           <div class="card-box" style="display: flex; flex-direction: column;">
-            <div class="card-box-title">Global Scene Spatial Representation (Interactive Visualizer)</div>
-            <div class="env-viewport-wrapper" style="flex: 1; min-height: 420px;">
-              <canvas id="studio-env-canvas" width="600" height="420"></canvas>
+            <div class="card-box-title" style="display: flex; justify-content: space-between; align-items: center;">
+              <span>🌐 2D Space Arena World View (2000×2000 px)</span>
+              <div style="display: flex; gap: 6px; align-items: center;">
+                <button class="btn btn-action btn-xs" id="btn-studio-reset-view">Recenter View</button>
+                <button class="btn btn-action btn-xs" id="btn-env-fullscreen" title="Maximize Space Arena View">⛶ Maximize</button>
+              </div>
             </div>
-            <div class="canvas-controls-bar">
-              <label class="checkbox-label"><input type="checkbox" id="chk-env-grid" checked> Show Grid</label>
-              <label class="checkbox-label"><input type="checkbox" id="chk-env-traj" checked> Show Trajectory</label>
-              <label class="checkbox-label"><input type="checkbox" id="chk-env-fov" checked> Show Camera FOV</label>
-              <label class="checkbox-label"><input type="checkbox" id="chk-env-axes" checked> Show Axes</label>
-              <button class="btn-reset-view" id="btn-studio-reset-view">Recenter Scene</button>
-            </div>
-          </div>
-
-          <!-- Right: Boundary Space Verification -->
-          <div class="card-box">
-            <div class="card-box-title">Spatial Geometry & Boundary Validation</div>
-            <p class="workbench-text-muted" style="margin-bottom: 10px;">
-              Problem Statement 26169 enforces a minimum virtual scene size of 2000 × 2000 pixels. Boundary clamping actively prevents target trajectories from escaping the active field.
-            </p>
-            <table class="stat-table">
-              <tr><td class="stat-label">Minimum Requirement</td><td class="stat-value">≥ 2000 × 2000 px</td></tr>
-              <tr><td class="stat-label">Active Scene Bounds</td><td class="stat-value" id="val-env-bounds">[0..2000, 0..2000]</td></tr>
-              <tr><td class="stat-label">Aspect Ratio</td><td class="stat-value">1.00 : 1.00</td></tr>
-              <tr><td class="stat-label">Boundary Clamping</td><td class="stat-value" style="color: var(--color-green);">ENFORCED</td></tr>
-              <tr><td class="stat-label">Terminal Position</td><td class="stat-value">(1000, 480) px</td></tr>
-              <tr><td class="stat-label">Azimuth Limits</td><td class="stat-value">-90° to +90°</td></tr>
-              <tr><td class="stat-label">Elevation Limits</td><td class="stat-value">-30° to +30°</td></tr>
-              <tr><td class="stat-label">Coordinate Convention</td><td class="stat-value">Cartesian (Origin BL)</td></tr>
-            </table>
-
-            <div class="status-banner green" style="margin-top: 14px;">
-              ✓ COMPLIANT: Virtual environment meets and exceeds all ISRO PS-26169 geometric constraints.
+            <div class="cam-viewport-wrapper env-viewport-box" id="env-canvas-container" style="flex: 1; min-height: 280px; position: relative;">
+              <canvas id="studio-env-canvas" width="720" height="320"></canvas>
+              <div style="position: absolute; bottom: 6px; left: 8px; font-size: 9px; font-family: var(--font-mono); background: rgba(0,0,0,0.8); padding: 2px 6px; border-radius: 3px; color: var(--color-cyan);">
+                Station: (1000, 480) | Arena: <span id="val-env-bounds">[0..2000, 0..2000]</span>
+              </div>
+              <button class="btn-floating-restore hidden" id="btn-env-restore" title="Restore Normal View">✕ Exit Fullscreen</button>
             </div>
           </div>
         </div>
       </section>
 
       <!-- =====================================================================
-           VIEW 3: TARGETS (TARGET GENERATOR & TRAJECTORY DESIGNER)
-           Answers: "WHAT ARE WE TRACKING?"
+           VIEW: TARGETS
            ===================================================================== -->
-      <section id="view-targets" class="view-section hidden">
+      <section id="view-targets" class="view-section">
         <div class="workbench-header">
-          <div class="workbench-title">TARGET GENERATOR & TRAJECTORY DESIGNER</div>
-          <div class="workbench-desc">Configure optical beacon target parameters, shape presets, sizes (5–20 px), and 4 mandatory + 3 optional motion models.</div>
+          <div class="workbench-header-left">
+            <div class="workbench-title">CONFIGURE OPTICAL TARGETS & MOTION</div>
+            <div class="workbench-desc">Define optical beacon intensity, geometric spot profile, velocity, and trajectory kinematics.</div>
+          </div>
+          <button class="btn btn-action btn-ps-modal-trigger" data-ps-section="targets">📋 PS REQUIREMENTS</button>
         </div>
 
-        <div class="targets-studio-layout">
-          <!-- Left Column: Target Properties & Motion Config -->
+        <div class="workbench-layout-2col">
+          <!-- Left: Target Presets & Kinematic Controls -->
           <div class="card-box">
-            <div class="card-box-title">Target Beacon Spot Properties</div>
-            <div class="form-row">
-              <label>Target Identifier</label>
-              <input type="text" class="form-input" value="T1 (Mandatory Target)" readonly>
+            <div class="card-box-title">Standard Mission Target Presets</div>
+            <div class="btn-preset-pill-group">
+              <button class="btn-tgt-preset active" data-tgt-preset="T1">T1: LEO Satellite (Circular)</button>
+              <button class="btn-tgt-preset" data-tgt-preset="T2">T2: GEO Optical Drone (Linear)</button>
+              <button class="btn-tgt-preset" data-tgt-preset="T3">T3: High-Speed Fighter (Zig-Zag)</button>
+              <button class="btn-tgt-preset" data-tgt-preset="T4">T4: Spiral Orbit Satellite</button>
+              <button class="btn-tgt-preset" data-tgt-preset="T5">T5: Evasive Tactical Target</button>
             </div>
+
+            <div class="card-box-title" style="margin-top: 12px;">Beacon Geometry & Spot Profile</div>
             <div class="form-row">
-              <label>Target Type</label>
-              <select class="form-select" id="tgt-type">
-                <option value="Beacon Spot" selected>Beacon Spot</option>
-                <option value="Optical Laser Source">Optical Laser Source</option>
+              <label>Beacon Spot Shape</label>
+              <select class="form-select" id="tgt-shape-select">
+                <option value="Circle" selected>Circular Gaussian Bloom (Default)</option>
+                <option value="Square">Square Aperture Spot</option>
+                <option value="Rectangle">Rectangular Array Spot</option>
+                <option value="Cross">Cross Reticle Pattern</option>
+                <option value="Point">Point Source (&lt; 5 px)</option>
               </select>
             </div>
             <div class="form-row">
-              <label>Target Shape Preset</label>
-              <select class="form-select" id="tgt-shape">
-                <option value="Point Source">Point Source</option>
-                <option value="Square" selected>Square (Default)</option>
-                <option value="Circle">Circle</option>
-                <option value="Rectangle">Rectangle</option>
-              </select>
-            </div>
-            <div class="form-row">
-              <label>Target Size (5 to 20 px)</label>
+              <label>Spot Diameter / Size (px)</label>
               <div class="slider-with-readout">
                 <input type="range" class="mini-slider" id="tgt-size-slider" min="5" max="20" value="10">
                 <span class="readout" id="tgt-size-val">10</span> <span class="unit">px</span>
               </div>
             </div>
             <div class="form-row">
-              <label>Brightness / Intensity</label>
-              <select class="form-select" id="tgt-brightness">
-                <option value="Low">Low</option>
-                <option value="Medium" selected>Medium</option>
-                <option value="High">High</option>
-              </select>
-            </div>
-            <div class="form-row">
-              <label>Target Range (km)</label>
-              <input type="number" class="form-input" id="tgt-range" value="5.0" step="0.5" min="0.5" max="50">
-            </div>
-            <div class="form-row">
-              <label>Initial Placement</label>
-              <select class="form-select" id="tgt-init-loc">
-                <option value="random" selected>Random (Default)</option>
-                <option value="center">Center of World</option>
-                <option value="custom">Custom Coordinates</option>
-              </select>
+              <label>Peak Optical Intensity (DN)</label>
+              <input type="number" class="form-input" id="tgt-intensity-input" value="255" min="100" max="255">
             </div>
 
-            <div class="card-box-title" style="margin-top: 14px;">Motion Model (4 Mandatory + 3 Optional)</div>
+            <div class="card-box-title" style="margin-top: 12px;">Kinematics & Trajectory Engine</div>
             <div class="form-row">
-              <label>Motion Algorithm</label>
-              <select class="form-select" id="tgt-motion-algo">
-                <option value="straight">Straight Line (Mandatory)</option>
-                <option value="circular">Circular (Mandatory)</option>
-                <option value="figure8" selected>Figure of 8 (Mandatory)</option>
-                <option value="random">Random Walk (Mandatory)</option>
-                <option value="spiral">Spiral (Optional)</option>
-                <option value="sinusoidal">Sinusoidal (Optional)</option>
-                <option value="userDefined">User-defined X(t), Y(t) (Optional)</option>
+              <label>Motion Model</label>
+              <select class="form-select" id="tgt-motion-select">
+                <option value="linear">Linear Uniform Velocity</option>
+                <option value="circular" selected>Circular Orbital Pass</option>
+                <option value="zigzag">Zig-Zag Evasive Maneuver</option>
+                <option value="spiral">Spiral Descent</option>
+                <option value="random">Random Walk (Severe Jitter)</option>
               </select>
             </div>
             <div class="form-row">
-              <label>Velocity Speed (px/s)</label>
-              <input type="number" class="form-input" id="tgt-speed" value="120" min="20" max="300" step="10">
-            </div>
-            <div class="form-row">
-              <label>Trajectory Radius (px)</label>
-              <input type="number" class="form-input" id="tgt-radius" value="450" min="50" max="800" step="25">
-            </div>
-            <div class="form-row">
-              <label>User Formula X(t)</label>
-              <input type="text" class="form-input" id="tgt-custom-x" value="1000 + 400 * Math.sin(t * 0.4)">
-            </div>
-            <div class="form-row">
-              <label>User Formula Y(t)</label>
-              <input type="text" class="form-input" id="tgt-custom-y" value="1000 + 300 * Math.sin(t * 0.8)">
+              <label>Target Velocity (px/s)</label>
+              <input type="number" class="form-input" id="tgt-speed-input" value="60" min="10" max="300">
             </div>
 
-            <div style="display: flex; gap: 6px; margin-top: 12px;">
-              <button class="btn btn-start" id="btn-apply-targets">Apply Target Config</button>
-              <button class="btn btn-reset" id="btn-reset-targets">Reset Defaults</button>
-            </div>
+            <button class="btn btn-start" id="btn-apply-target" style="width: 100%; margin-top: 14px;">Apply Target Parameters</button>
           </div>
 
-          <!-- Right Column: Trajectory Designer Canvas & Target Registry Table -->
-          <div style="display: flex; flex-direction: column; gap: 10px;">
-            <div class="card-box" style="flex: 1; display: flex; flex-direction: column;">
-              <div class="card-box-title">Trajectory Designer & Orbit Preview</div>
-              <div class="env-viewport-wrapper" style="flex: 1; min-height: 280px;">
-                <canvas id="designer-traj-canvas" width="620" height="280"></canvas>
-              </div>
-              <div class="canvas-controls-bar">
-                <span style="font-family: var(--font-mono); color: var(--text-secondary); font-size: 9px;">Trajectory Prediction: Computed over 80 discrete kinematic integration steps</span>
-                <span class="status-pill-small">PREDICTIVE PATH ACTIVE</span>
-              </div>
+          <!-- Right: Trajectory & Spot Preview -->
+          <div class="card-box" style="display: flex; flex-direction: column;">
+            <div class="card-box-title">Trajectory & Optical Spot Diagnostic Preview</div>
+            <div class="cam-viewport-wrapper" style="flex: 1; min-height: 220px;">
+              <canvas id="tgt-preview-canvas" width="440" height="220"></canvas>
             </div>
-
-            <div class="card-box">
-              <div class="card-box-title">Active Targets Registry</div>
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Target ID</th>
-                    <th>Type</th>
-                    <th>Shape</th>
-                    <th>Size</th>
-                    <th>Current World Position</th>
-                    <th>Velocity (vx, vy)</th>
-                    <th>Motion Model</th>
-                    <th>State</th>
-                  </tr>
-                </thead>
-                <tbody id="targets-table-body">
-                  <tr>
-                    <td><strong>T1</strong> (Primary)</td>
-                    <td>Beacon Spot</td>
-                    <td id="tbl-tgt-shape">Square</td>
-                    <td id="tbl-tgt-size">10 px</td>
-                    <td id="tbl-tgt-pos">(1000.0, 1000.0)</td>
-                    <td id="tbl-tgt-vel">(80, 60) px/s</td>
-                    <td id="tbl-tgt-motion">Figure of 8</td>
-                    <td><span class="badge-locked">ACTIVE</span></td>
-                  </tr>
-                </tbody>
+            <div style="margin-top: 10px;">
+              <table class="stat-table">
+                <tr><td class="stat-label">Active Target ID</td><td class="stat-value" id="tbl-tgt-id">T1</td></tr>
+                <tr><td class="stat-label">Shape & Diameter</td><td class="stat-value" id="tbl-tgt-shape">Circle (10 px)</td></tr>
+                <tr><td class="stat-label">Motion Type</td><td class="stat-value" id="tbl-tgt-motion">Circular Orbit</td></tr>
+                <tr><td class="stat-label">Target Position</td><td class="stat-value" id="tbl-tgt-pos">(1000.0, 1000.0)</td></tr>
               </table>
             </div>
           </div>
@@ -662,691 +306,612 @@
       </section>
 
       <!-- =====================================================================
-           VIEW 4: CAMERA & PAN-TILT (CAMERA & PAN-TILT GIMBAL WORKBENCH)
-           Answers: "HOW IS THE SENSOR POSITIONED?"
+           VIEW: CAMERA & PAN-TILT
            ===================================================================== -->
-      <section id="view-camera" class="view-section hidden">
+      <section id="view-camera" class="view-section">
         <div class="workbench-header">
-          <div class="workbench-title">CAMERA & PAN-TILT GIMBAL WORKBENCH</div>
-          <div class="workbench-desc">Configure sensor resolution (640×480), FOV (4°×3°), update rate (≥30 Hz), pan/tilt slew rates (5–10 °/s), and physical gimbal axes.</div>
+          <div class="workbench-header-left">
+            <div class="workbench-title">CONFIGURE CAMERA SENSOR & GIMBAL</div>
+            <div class="workbench-desc">Configure the 640×480 Focal Plane Array, FOV limits, manual flight gimbal, and slew limits.</div>
+          </div>
+          <button class="btn btn-action btn-ps-modal-trigger" data-ps-section="camera">📋 PS REQUIREMENTS</button>
         </div>
 
-        <div class="cam-studio-3col">
-          <!-- Left Column: Camera Sensor Parameters -->
-          <div class="card-box">
-            <div class="card-box-title">Focal Plane Array (FPA) Sensor</div>
-            <div class="form-row">
-              <label>Sensor Resolution</label>
-              <span class="stat-value">640 × 480 px</span>
-            </div>
-            <div class="form-row">
-              <label>Sensor Type</label>
-              <span class="stat-value">Monochrome (FPA)</span>
-            </div>
-            <div class="form-row">
-              <label>Horizontal FOV (H)</label>
-              <span class="stat-value">4.0°</span>
-            </div>
-            <div class="form-row">
-              <label>Vertical FOV (V)</label>
-              <span class="stat-value">3.0°</span>
-            </div>
-            <div class="form-row">
-              <label>Sensor Update Rate</label>
-              <span class="stat-value">30 Hz</span>
-            </div>
-            <div class="form-row">
-              <label>Pixel Dimensions</label>
-              <span class="stat-value">5.5 µm pitch</span>
-            </div>
-            <div class="form-row">
-              <label>Sensor Mount</label>
-              <span class="stat-value">Coaxial Boresight</span>
-            </div>
-
-            <div class="card-box-title" style="margin-top: 14px;">Gimbal Kinematic Dynamic Limits</div>
-            <div class="form-row">
-              <label>Pan Limits</label>
-              <span class="stat-value">-90° to +90°</span>
-            </div>
-            <div class="form-row">
-              <label>Tilt Limits</label>
-              <span class="stat-value">-30° to +30°</span>
-            </div>
-            <div class="form-row">
-              <label>Max Pan Slew Speed</label>
-              <input type="number" class="form-input" id="cam-pan-speed" value="5.0" min="5.0" max="10.0" step="0.5"> °/s
-            </div>
-            <div class="form-row">
-              <label>Max Tilt Slew Speed</label>
-              <input type="number" class="form-input" id="cam-tilt-speed" value="5.0" min="5.0" max="10.0" step="0.5"> °/s
-            </div>
-            <div class="form-row">
-              <label>Control Loop Rate (≥ 20 Hz)</label>
-              <input type="number" class="form-input" id="cam-ctrl-rate" value="20" min="20" max="50"> Hz
-            </div>
-
-            <div style="display: flex; gap: 6px; margin-top: 12px;">
-              <button class="btn btn-start" id="btn-apply-cam">Apply Gimbal Limits</button>
-            </div>
-          </div>
-
-          <!-- Center Column: Physical Gimbal Kinematic Diagram -->
-          <div class="card-box" style="display: flex; flex-direction: column; align-items: center; justify-content: center;">
-            <div class="card-box-title" style="width: 100%;">Physical Gimbal Kinematic Axis Diagram</div>
-            <div class="gimbal-schematic-wrap">
-              <!-- Aerospace-grade vector representation of 2-axis gimbal -->
-              <svg viewBox="0 0 240 220" width="220" height="200">
-                <defs>
-                  <linearGradient id="metalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#4a6580"/>
-                    <stop offset="50%" stop-color="#2a3c50"/>
-                    <stop offset="100%" stop-color="#142030"/>
-                  </linearGradient>
-                  <linearGradient id="fovConeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                    <stop offset="0%" stop-color="rgba(0, 210, 255, 0.4)"/>
-                    <stop offset="100%" stop-color="rgba(0, 210, 255, 0.05)"/>
-                  </linearGradient>
-                </defs>
-                <!-- Base Ground Pedestal -->
-                <rect x="70" y="190" width="100" height="15" rx="3" fill="#0c1828" stroke="#1c3454"/>
-                <text x="120" y="202" fill="#526b88" font-size="8" text-anchor="middle" font-family="monospace">GROUND MOUNT</text>
-                
-                <!-- Azimuth Pan Turret Axis -->
-                <rect x="100" y="145" width="40" height="45" rx="4" fill="#182c44" stroke="#00d2ff"/>
-                <!-- Pan Rotation Arrows -->
-                <path d="M75 165 C85 155, 155 155, 165 165" fill="none" stroke="#ffab00" stroke-width="1.5" stroke-dasharray="3,3"/>
-                <polygon points="167,165 160,161 162,168" fill="#ffab00"/>
-                <text x="120" y="138" fill="#ffab00" font-size="8" text-anchor="middle" font-family="monospace">PAN AXIS (±90°)</text>
-
-                <!-- Elevation Tilt Fork -->
-                <path d="M85 145 L85 95 Q85 85 95 85 L145 85 Q155 85 155 95 L155 145" fill="none" stroke="#00d2ff" stroke-width="3"/>
-
-                <!-- Camera Optical Barrel (Tilt Body) -->
-                <rect x="75" y="70" width="90" height="45" rx="5" fill="url(#metalGrad)" stroke="#4a709c"/>
-                <!-- Front Optical Lens -->
-                <ellipse cx="165" cy="92" rx="6" ry="20" fill="#08101a" stroke="#00d2ff" stroke-width="2"/>
-                <!-- Tilt Rotation Indicator -->
-                <path d="M120 50 C135 50, 145 65, 145 80" fill="none" stroke="#00e676" stroke-width="1.5" stroke-dasharray="2,2"/>
-                <polygon points="145,82 141,75 148,76" fill="#00e676"/>
-                <text x="120" y="44" fill="#00e676" font-size="8" text-anchor="middle" font-family="monospace">TILT AXIS (±30°)</text>
-
-                <!-- 4°x3° FOV Optical Cone Beam -->
-                <polygon points="168,92 235,55 235,130" fill="url(#fovConeGrad)" stroke="rgba(0, 210, 255, 0.4)"/>
-                <text x="205" y="95" fill="#00d2ff" font-size="8" text-anchor="middle" font-family="monospace">4°×3° FOV</text>
-              </svg>
-            </div>
-
-            <!-- Dynamic Pan & Tilt Angular Displacement Gauges -->
-            <div style="width: 100%; margin-top: 10px;">
-              <div class="form-compact-row">
-                <span>Pan Angular Displacement:</span>
-                <strong id="gauge-pan-val" class="cyan-val">0.00°</strong>
-              </div>
-              <div class="gauge-track">
-                <div class="gauge-indicator" id="gauge-pan-bar" style="left: 50%;"></div>
-              </div>
-
-              <div class="form-compact-row" style="margin-top: 6px;">
-                <span>Tilt Angular Displacement:</span>
-                <strong id="gauge-tilt-val" class="green-val">0.00°</strong>
-              </div>
-              <div class="gauge-track">
-                <div class="gauge-indicator" id="gauge-tilt-bar" style="left: 50%; background: var(--color-green); box-shadow: 0 0 6px var(--color-green);"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Right Column: Manual Camera Flight D-Pad Controls -->
-          <div class="card-box">
-            <div class="card-box-title">Manual Gimbal Flight Controller</div>
-            <p class="workbench-text-muted">
-              Manually command the pan/tilt servo in discrete steps to test tracking loop re-acquisition.
-            </p>
-
-            <div style="display: flex; justify-content: center; margin: 16px 0;">
-              <div class="dpad-container" style="width: 90px; height: 90px;">
-                <button class="dpad-btn dpad-up" id="btn-cam-up" style="width: 28px; height: 28px; left: 31px;" title="Tilt Up">▲</button>
-                <button class="dpad-btn dpad-left" id="btn-cam-left" style="width: 28px; height: 28px; top: 31px;" title="Pan Left">◄</button>
-                <button class="dpad-btn dpad-center" id="btn-cam-center" style="width: 28px; height: 28px; top: 31px; left: 31px;" title="Center (0,0)">●</button>
-                <button class="dpad-btn dpad-right" id="btn-cam-right" style="width: 28px; height: 28px; top: 31px; right: 0;" title="Pan Right">►</button>
-                <button class="dpad-btn dpad-down" id="btn-cam-down" style="width: 28px; height: 28px; left: 31px; bottom: 0;" title="Tilt Down">▼</button>
-              </div>
-            </div>
-
-            <div class="form-row">
-              <label>Pan Step (degrees)</label>
-              <input type="number" class="form-input" id="inp-pan-step" value="0.5" step="0.1" min="0.1" max="5.0">
-            </div>
-            <div class="form-row">
-              <label>Tilt Step (degrees)</label>
-              <input type="number" class="form-input" id="inp-tilt-step" value="0.5" step="0.1" min="0.1" max="5.0">
-            </div>
-
-            <div class="btn-group" style="margin-top: 10px;">
-              <button class="btn btn-action" id="btn-zoom-in">Zoom In +</button>
-              <button class="btn btn-action" id="btn-zoom-out">Zoom Out -</button>
-              <button class="btn btn-start" id="btn-auto-track">Auto-Track Mode</button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- =====================================================================
-           VIEW 5: DISTURBANCES & NOISE INJECTION LAB
-           Answers: "WHAT CONDITIONS ARE AFFECTING SENSING?"
-           ===================================================================== -->
-      <section id="view-disturbances" class="view-section hidden">
-        <div class="workbench-header">
-          <div class="workbench-title">DISTURBANCES & ATMOSPHERIC NOISE INJECTION LAB</div>
-          <div class="workbench-desc">Inject environmental degradation: Salt & Pepper, Gaussian, Poisson, Camera Jitter (±20 px), Atmosphere, Platform Motion (±20 px/frame).</div>
+        <div class="concept-notice-banner">
+          <span>ℹ</span>
+          <span><strong>Control Mode Distinction:</strong> <em>Manual Gimbal Control:</em> User directly commands camera orientation. | <em>Auto-Track:</em> Closed-loop tracking algorithm commands pan/tilt to drive centroid error to zero.</span>
         </div>
 
-        <div class="dist-studio-layout">
-          <!-- Left Column: Disturbance & Noise Controls -->
+        <div class="workbench-layout-2col">
+          <!-- Left: Manual Gimbal Flight & Orientation Controls -->
           <div class="card-box">
-            <div class="card-box-title">Atmospheric Weather Presets</div>
-            <div class="dist-presets-bar">
-              <button class="btn-dist-pill active" data-preset="Clear">Clear</button>
-              <button class="btn-dist-pill" data-preset="Haze">Haze</button>
-              <button class="btn-dist-pill" data-preset="Fog">Fog</button>
-              <button class="btn-dist-pill" data-preset="Rain">Rain</button>
-              <button class="btn-dist-pill" data-preset="Low Light">Low Light</button>
-              <button class="btn-dist-pill" data-preset="Custom">Custom</button>
-            </div>
-
-            <div class="card-box-title" style="margin-top: 10px;">Atmospheric Attenuation</div>
-            <div class="dist-ctrl-row">
-              <label class="checkbox-label"><input type="checkbox" id="chk-dash-atmo" checked> Atmospheric Turbulence Enable</label>
-            </div>
-            <div class="form-row">
-              <label>Contrast Reduction (0.0 to 0.8)</label>
-              <input type="range" id="lab-contrast" min="0" max="0.8" step="0.05" value="0" style="width: 140px;">
-            </div>
-            <div class="form-row">
-              <label>Brightness Attenuation (0.0 to 0.8)</label>
-              <input type="range" id="lab-brightness" min="0" max="0.8" step="0.05" value="0" style="width: 140px;">
-            </div>
-
-            <div class="card-box-title" style="margin-top: 10px;">Pixel Noise Models</div>
-            <div class="dist-ctrl-row">
-              <label class="checkbox-label"><input type="checkbox" id="chk-noise-gauss" checked> Gaussian Noise (SD 0 to 20 px)</label>
-              <div class="slider-with-readout">
-                <input type="range" class="mini-slider" id="inp-noise-gauss" min="0" max="20" value="10">
-                <span class="readout" id="lbl-gauss-val">10</span> <span class="unit">px</span>
-              </div>
-            </div>
-            <div class="dist-ctrl-row">
-              <label class="checkbox-label"><input type="checkbox" id="chk-noise-sp" checked> Salt & Pepper Noise (0 to 15%)</label>
-              <div class="slider-with-readout">
-                <input type="range" class="mini-slider" id="inp-noise-sp" min="0" max="15" value="5">
-                <span class="readout" id="lbl-sp-val">5</span> <span class="unit">%</span>
-              </div>
-            </div>
-            <div class="dist-ctrl-row">
-              <label class="checkbox-label"><input type="checkbox" id="chk-noise-poisson" checked> Poisson Shot Noise</label>
-              <span class="unit">Enabled</span>
-            </div>
-            <div class="dist-ctrl-row">
-              <label class="checkbox-label"><input type="checkbox" id="chk-scintillation"> Scintillation (Intensity Fluctuations)</label>
-              <div class="slider-with-readout">
-                <input type="range" class="mini-slider" id="inp-scintillation" min="0" max="30" value="10">
-                <span class="readout" id="lbl-scint-val">10</span> <span class="unit">%</span>
+            <div class="card-box-title">Manual Gimbal Flight & Servo Control</div>
+            <div class="flight-dpad-container" style="margin: 10px 0;">
+              <div class="dpad-grid">
+                <div></div>
+                <button class="btn-dpad" id="btn-cam-up" title="Tilt Up">▲</button>
+                <div></div>
+                <button class="btn-dpad" id="btn-cam-left" title="Pan Left">◀</button>
+                <button class="btn-dpad-center" id="btn-cam-center" title="Center Boresight">⦿</button>
+                <button class="btn-dpad" id="btn-cam-right" title="Pan Right">▶</button>
+                <div></div>
+                <button class="btn-dpad" id="btn-cam-down" title="Tilt Down">▼</button>
+                <div></div>
               </div>
             </div>
 
-            <div class="card-box-title" style="margin-top: 10px;">Platform Kinematics & Vibration</div>
             <div class="form-row">
-              <label>Platform Motion Type</label>
-              <select class="form-select" id="lab-platform-type">
-                <option value="linear" selected>Linear (Mandatory)</option>
-                <option value="circular">Circular</option>
-                <option value="random">Random</option>
-                <option value="spiral">Spiral</option>
-                <option value="figure8">Figure of 8</option>
-              </select>
+              <label>Manual Pan Step (°)</label>
+              <input type="number" class="form-input" id="inp-pan-step" value="0.5" step="0.1" min="0.1" max="5.0" style="width: 80px;">
             </div>
-            <div class="dist-ctrl-row">
-              <label class="checkbox-label"><input type="checkbox" id="chk-dash-platform" checked> Platform Magnitude (±0 to ±20 px/frame)</label>
-              <div class="slider-with-readout">
-                <input type="range" class="mini-slider" id="inp-platform-mag" min="0" max="20" value="20">
-                <span class="readout" id="lbl-platform-val">20</span> <span class="unit">px/fr</span>
+            <div class="form-row">
+              <label>Manual Tilt Step (°)</label>
+              <input type="number" class="form-input" id="inp-tilt-step" value="0.5" step="0.1" min="0.1" max="5.0" style="width: 80px;">
+            </div>
+
+            <div class="card-box-title" style="margin-top: 12px;">Dynamic Angular Displacement</div>
+            <div class="gauge-container">
+              <div class="gauge-item">
+                <span class="gauge-label">PAN ORIENTATION</span>
+                <span class="gauge-val" id="val-pan-gauge">0.00°</span>
               </div>
-            </div>
-            <div class="dist-ctrl-row">
-              <label class="checkbox-label"><input type="checkbox" id="chk-jitter" checked> Camera Jitter (±0 to ±20 px/frame)</label>
-              <div class="slider-with-readout">
-                <input type="range" class="mini-slider" id="inp-jitter" min="0" max="20" value="2">
-                <span class="readout" id="lbl-jitter-val">2</span> <span class="unit">px</span>
+              <div class="gauge-item">
+                <span class="gauge-label">TILT ORIENTATION</span>
+                <span class="gauge-val" id="val-tilt-gauge">0.00°</span>
               </div>
             </div>
           </div>
 
-          <!-- Right Column: LIVE BEFORE / AFTER DISTURBANCE PREVIEW (Split View) -->
-          <div class="card-box" style="display: flex; flex-direction: column;">
-            <div class="card-box-title">Live Disturbance Pipeline Verification (Before / After Comparison)</div>
-            <p class="workbench-text-muted" style="margin-bottom: 8px;">
-              Visual verification of real pixel corruption: Compare the uncorrupted beacon source against the noise-injected sensor frame before detection.
-            </p>
-
-            <div class="dist-split-preview-grid">
-              <!-- Left: Uncorrupted Optical Frame -->
-              <div class="split-frame-box">
-                <div class="split-frame-title">A. Clean Optical Signal (Pre-Disturbance)</div>
-                <div class="env-viewport-wrapper" style="height: 200px;">
-                  <canvas id="dist-clean-canvas" width="300" height="200"></canvas>
-                </div>
-                <div class="split-frame-footer">Nominal SNR: &gt; 35 dB | Blur: None</div>
-              </div>
-
-              <!-- Right: Degraded Frame -->
-              <div class="split-frame-box">
-                <div class="split-frame-title" style="color: var(--color-amber);">B. Degraded Sensor Frame (Post-Disturbance)</div>
-                <div class="env-viewport-wrapper" style="height: 200px;">
-                  <canvas id="dist-degraded-canvas" width="300" height="200"></canvas>
-                </div>
-                <div class="split-frame-footer" id="dist-metrics-footer">SNR: 18.2 dB | Contrast Loss: 20% | Jitter: ±2 px</div>
+          <!-- Right: Sensor & Dynamic Servo Limits -->
+          <div class="card-box">
+            <div class="card-box-title">Optics & Gimbal Slew Saturation Limits</div>
+            <div class="form-row">
+              <label>Max Slew Rate (&omega;_max)</label>
+              <div class="slider-with-readout">
+                <input type="range" class="mini-slider" id="inp-max-slew" min="5" max="10" value="8" step="0.5">
+                <span class="readout" id="lbl-slew-val">8.0</span> <span class="unit">°/s</span>
               </div>
             </div>
+            <div class="form-row">
+              <label>Horizontal FOV (&theta;_H)</label>
+              <input type="number" class="form-input" id="inp-fov-h" value="4.0" step="0.1" min="1.0" max="10.0">
+            </div>
+            <div class="form-row">
+              <label>Vertical FOV (&theta;_V)</label>
+              <input type="number" class="form-input" id="inp-fov-v" value="3.0" step="0.1" min="1.0" max="8.0">
+            </div>
 
-            <!-- Disturbance Degradation Telemetry Table -->
-            <table class="stat-table" style="margin-top: 14px;">
-              <tr><td class="stat-label">PS-26169 Max Jitter Constraint</td><td class="stat-value">Up to ±20 px/frame</td></tr>
-              <tr><td class="stat-label">PS-26169 Max Platform Motion</td><td class="stat-value">Up to ±20 px/frame</td></tr>
-              <tr><td class="stat-label">PS-26169 Max Gaussian Noise</td><td class="stat-value">Standard Deviation ≤ 20 px</td></tr>
-              <tr><td class="stat-label">Status</td><td class="stat-value" style="color: var(--color-green);">ALL INJECTION BOUNDS COMPLIANT</td></tr>
+            <table class="stat-table" style="margin-top: 12px;">
+              <tr><td class="stat-label">Sensor Type</td><td class="stat-value">Monochrome FPA (640×480)</td></tr>
+              <tr><td class="stat-label">Frame Update Rate</td><td class="stat-value">30 Hz (&ge; 30 Hz req)</td></tr>
+              <tr><td class="stat-label">Loop Interval</td><td class="stat-value">50 ms (20 Hz)</td></tr>
+              <tr><td class="stat-label">Slew Saturation</td><td class="stat-value" style="color: var(--color-green);">ACTIVE</td></tr>
             </table>
+
+            <button class="btn btn-start" id="btn-apply-cam" style="width: 100%; margin-top: 14px;">Apply Kinematic Limits</button>
+          </div>
+        </div>
+
+        <!-- Task 7: Physical Gimbal Kinematic Axis Diagram Card (Frontend-only Mockup) -->
+        <div class="card-box" style="margin-top: 14px;">
+          <div class="card-box-title">PHYSICAL GIMBAL KINEMATIC AXIS DIAGRAM</div>
+          <div style="display: flex; justify-content: center; align-items: center; padding: 14px; background: #040914; border: 1px solid var(--border-subtle); border-radius: 4px; margin-bottom: 12px;">
+            <svg width="420" height="220" viewBox="0 0 420 220" fill="none" xmlns="http://www.w3.org/2000/svg" style="max-width: 100%; height: auto;">
+              <!-- Ground / Base Mount -->
+              <rect x="140" y="195" width="140" height="15" rx="3" fill="#0c1a32" stroke="var(--border-subtle)" stroke-width="1.5"/>
+              <text x="210" y="206" fill="var(--text-secondary)" font-size="9" font-weight="700" font-family="var(--font-mono)" text-anchor="middle">GROUND MOUNT</text>
+              
+              <!-- Gimbal Base Pedestal & Pan Axis Shaft -->
+              <rect x="195" y="155" width="30" height="40" fill="#081426" stroke="var(--color-cyan)" stroke-width="1.5"/>
+              <line x1="210" y1="140" x2="210" y2="200" stroke="var(--color-cyan)" stroke-dasharray="3 3" stroke-width="1.2"/>
+              
+              <!-- Pan Axis Curved Arrow (±90°) -->
+              <path d="M 160 170 C 160 185, 260 185, 260 170" fill="none" stroke="var(--color-cyan)" stroke-width="1.8" stroke-dasharray="4 2"/>
+              <polygon points="263,165 260,173 255,168" fill="var(--color-cyan)"/>
+              <polygon points="157,165 160,173 165,168" fill="var(--color-cyan)"/>
+              <text x="210" y="188" fill="var(--color-cyan)" font-size="9.5" font-weight="700" font-family="var(--font-mono)" text-anchor="middle">PAN AXIS (±90°)</text>
+              
+              <!-- Gimbal Fork / Yoke (Tilt Axis Support) -->
+              <path d="M 165 155 L 165 95 L 185 95 L 185 140 L 235 140 L 235 95 L 255 95 L 255 155 Z" fill="#0c1e38" stroke="var(--border-subtle)" stroke-width="1.5"/>
+              
+              <!-- Tilt Axis Pivot & Curved Arrow (±30°) -->
+              <circle cx="175" cy="95" r="4" fill="var(--color-green)"/>
+              <circle cx="245" cy="95" r="4" fill="var(--color-green)"/>
+              <line x1="160" y1="95" x2="260" y2="95" stroke="var(--color-green)" stroke-dasharray="3 3" stroke-width="1.2"/>
+              <path d="M 150 75 C 140 95, 140 105, 150 115" fill="none" stroke="var(--color-green)" stroke-width="1.8" stroke-dasharray="3 2"/>
+              <polygon points="153,70 146,76 153,80" fill="var(--color-green)"/>
+              <polygon points="153,120 146,114 153,110" fill="var(--color-green)"/>
+              <text x="135" y="98" fill="var(--color-green)" font-size="9.5" font-weight="700" font-family="var(--font-mono)" text-anchor="end">TILT AXIS (±30°)</text>
+              
+              <!-- Camera Optical Housing Body -->
+              <rect x="185" y="70" width="50" height="50" rx="4" fill="#07101e" stroke="var(--color-cyan)" stroke-width="1.5"/>
+              <rect x="195" y="80" width="30" height="30" rx="2" fill="#0b172a" stroke="var(--border-subtle)" stroke-width="1"/>
+              <circle cx="210" cy="95" r="8" fill="#030712" stroke="var(--color-cyan)" stroke-width="1.5"/>
+              <circle cx="210" cy="95" r="3" fill="var(--color-green)"/>
+              
+              <!-- Optical Lens Barrel Projecting Upward -->
+              <rect x="200" y="45" width="20" height="25" rx="2" fill="#0d2038" stroke="var(--color-cyan)" stroke-width="1.2"/>
+              
+              <!-- Triangular FOV Cone (4° x 3°) -->
+              <polygon points="210,45 160,5 260,5" fill="rgba(0, 210, 255, 0.08)" stroke="var(--color-cyan)" stroke-width="1.2" stroke-dasharray="4 3"/>
+              <text x="210" y="20" fill="var(--color-cyan)" font-size="9" font-weight="700" font-family="var(--font-mono)" text-anchor="middle">4° × 3° FOV CONE</text>
+            </svg>
+          </div>
+
+          <!-- Sliders with Live Readout -->
+          <div class="workbench-layout-2col">
+            <div class="form-row">
+              <label>Pan Angular Displacement:</label>
+              <div class="slider-with-readout">
+                <input type="range" class="mini-slider" id="inp-gimbal-diagram-pan" min="-90" max="90" step="0.1" value="0">
+                <span class="readout" id="val-gimbal-diagram-pan">+0.00°</span>
+              </div>
+            </div>
+            <div class="form-row">
+              <label>Tilt Angular Displacement:</label>
+              <div class="slider-with-readout">
+                <input type="range" class="mini-slider" id="inp-gimbal-diagram-tilt" min="-30" max="30" step="0.1" value="0">
+                <span class="readout" id="val-gimbal-diagram-tilt">+0.00°</span>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       <!-- =====================================================================
-           VIEW 6: DETECTION & TRACKING DIAGNOSTICS LAB
-           Answers: "HOW ARE WE FINDING AND FOLLOWING THE TARGET?"
+           VIEW: DISTURBANCES & NOISE LAB
            ===================================================================== -->
-      <section id="view-detection" class="view-section hidden">
+      <section id="view-disturbances" class="view-section">
         <div class="workbench-header">
-          <div class="workbench-title">DETECTION & TRACKING DIAGNOSTICS LAB</div>
-          <div class="workbench-desc">Classical Computer Vision (Adaptive Threshold + Sub-pixel IW-CoG), Pluggable AI Detector Slot, State Machine, and Physics-Informed Optical Layer.</div>
+          <div class="workbench-header-left">
+            <div class="workbench-title">ADD REAL-WORLD DISTURBANCES</div>
+            <div class="workbench-desc">Inject atmospheric noise, turbulence, and platform jitter to evaluate tracking robustness.</div>
+          </div>
+          <button class="btn btn-action btn-ps-modal-trigger" data-ps-section="disturbances">📋 PS REQUIREMENTS</button>
         </div>
 
-        <div class="detection-studio-layout">
-          <!-- Left Column: Detector & Tracker Configuration -->
+        <div class="concept-notice-banner">
+          <span>ℹ</span>
+          <span><strong>Disturbance Concept:</strong> Atmospheric and sensor disturbances degrade the optical signal observed by the camera sensor without altering the physical target trajectory.</span>
+        </div>
+
+        <!-- Atmospheric Preset Buttons -->
+        <div class="card-box" style="padding: 8px 12px;">
+          <div class="card-box-title" style="margin-bottom: 6px;">Atmospheric Condition Presets</div>
+          <div class="btn-preset-pill-group">
+            <button class="btn-dist-pill active" data-preset="Clear">Clear Space (Nominal 0-Noise)</button>
+            <button class="btn-dist-pill" data-preset="Haze">Light Haze</button>
+            <button class="btn-dist-pill" data-preset="Fog">Dense Fog</button>
+            <button class="btn-dist-pill" data-preset="Rain">Rain / Scattering</button>
+            <button class="btn-dist-pill" data-preset="Low Light">Low Contrast / Night</button>
+          </div>
+        </div>
+
+        <div class="workbench-layout-2col">
+          <!-- Left: Disturbance Sliders (Defaults to 0 for Clean Baseline) -->
           <div class="card-box">
-            <div class="card-box-title">Detector Architecture</div>
+            <div class="card-box-title">Pixel Noise & Atmospheric Levels</div>
+            <div class="form-row">
+              <label>Gaussian Noise (σ)</label>
+              <div class="slider-with-readout">
+                <input type="range" class="mini-slider" id="inp-noise-gauss" min="0" max="20" value="0">
+                <span class="readout" id="lbl-gauss-val">0</span> <span class="unit">px</span>
+              </div>
+            </div>
+            <div class="form-row">
+              <label>Salt & Pepper Density</label>
+              <div class="slider-with-readout">
+                <input type="range" class="mini-slider" id="inp-noise-sp" min="0" max="30" value="0">
+                <span class="readout" id="lbl-sp-val">0</span> <span class="unit">%</span>
+              </div>
+            </div>
+            <div class="form-row">
+              <label>Scintillation Variance (σ_I²)</label>
+              <div class="slider-with-readout">
+                <input type="range" class="mini-slider" id="inp-scintillation" min="0" max="100" value="0">
+                <span class="readout" id="lbl-scint-val">0</span> <span class="unit">%</span>
+              </div>
+            </div>
+
+            <div class="card-box-title" style="margin-top: 10px;">Platform Motion & Jitter</div>
+            <div class="form-row">
+              <label>Platform Motion Drift</label>
+              <div class="slider-with-readout">
+                <input type="range" class="mini-slider" id="inp-platform-mag" min="0" max="40" value="0">
+                <span class="readout" id="lbl-platform-val">0</span> <span class="unit">px</span>
+              </div>
+            </div>
+            <div class="form-row">
+              <label>High-Freq Camera Jitter</label>
+              <div class="slider-with-readout">
+                <input type="range" class="mini-slider" id="inp-jitter" min="0" max="15" value="0">
+                <span class="readout" id="lbl-jitter-val">0</span> <span class="unit">px</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right: Before / After Comparison Preview -->
+          <div class="card-box" style="display: flex; flex-direction: column;">
+            <div class="card-box-title">Live Sensor Degradation Preview (Clean vs Degraded)</div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; flex: 1; min-height: 200px;">
+              <div class="cam-viewport-wrapper" style="height: 100%;">
+                <canvas id="dist-clean-canvas" width="220" height="180"></canvas>
+                <div style="position: absolute; bottom: 4px; left: 4px; font-size: 8px; font-family: var(--font-mono); background: rgba(0,0,0,0.8); padding: 1px 4px; color: var(--color-green);">Clean Optical Signal</div>
+              </div>
+              <div class="cam-viewport-wrapper" style="height: 100%;">
+                <canvas id="dist-degraded-canvas" width="220" height="180"></canvas>
+                <div style="position: absolute; bottom: 4px; left: 4px; font-size: 8px; font-family: var(--font-mono); background: rgba(0,0,0,0.8); padding: 1px 4px; color: var(--color-amber);">Degraded Sensor Frame</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           VIEW: DETECTION & TRACKING LAB
+           ===================================================================== -->
+      <section id="view-detection" class="view-section">
+        <div class="workbench-header">
+          <div class="workbench-header-left">
+            <div class="workbench-title">DETECTION & TRACKING ALGORITHM LAB</div>
+            <div class="workbench-desc">Configure Intensity-Weighted Center of Gravity (IW-CoG) centroiding, state transitions, and Kalman prediction filter.</div>
+          </div>
+          <button class="btn btn-action btn-ps-modal-trigger" data-ps-section="algorithms">📋 PS REQUIREMENTS</button>
+        </div>
+
+        <!-- Top Row: Algorithm Selection & Parameters -->
+        <div class="workbench-layout-2col">
+          <!-- Left: Centroiding & Adaptive Thresholding -->
+          <div class="card-box">
+            <div class="card-box-title">IW-CoG Centroiding & Detection Algorithm</div>
             <div class="form-row">
               <label>Detection Algorithm</label>
-              <select class="form-select" id="det-active-method">
-                <option value="classical" selected>Classical CV (Adaptive Threshold + IW-CoG)</option>
-                <option value="blob_log">Blob / Laplacian of Gaussian (LoG)</option>
-                <option value="connected_comp">Connected Components Centroiding</option>
-                <option value="ai_extensible">AI Detector (Pluggable Architectural Slot)</option>
+              <select class="form-select" id="det-algo-select">
+                <option value="classical" selected>Classical: Adaptive Threshold + IW-CoG</option>
+                <option value="ai_extensible">Pluggable: AI Deep Network (Extensible Slot)</option>
               </select>
             </div>
             <div class="form-row">
-              <label>Adaptive Threshold Offset</label>
-              <input type="number" class="form-input" id="det-thresh-offset" value="25" min="5" max="60">
+              <label>Adaptive Threshold Offset (T_offset)</label>
+              <input type="number" class="form-input" id="inp-thresh-offset" value="25" min="5" max="100">
             </div>
             <div class="form-row">
-              <label>Minimum Blob Area (px)</label>
-              <input type="number" class="form-input" id="det-min-area" value="3" min="1" max="20">
+              <label>Min Target Area (px)</label>
+              <input type="number" class="form-input" id="inp-min-area" value="12" min="4" max="50">
             </div>
             <div class="form-row">
-              <label>Maximum Blob Area (px)</label>
-              <input type="number" class="form-input" id="det-max-area" value="500" min="50" max="1000">
-            </div>
-
-            <div class="card-box-title" style="margin-top: 14px;">Tracking Estimator & Filter</div>
-            <div class="form-row">
-              <label>Tracking Filter Model</label>
-              <select class="form-select" id="trk-active-model">
-                <option value="kalman" selected>Kalman Filter (Constant Velocity)</option>
-                <option value="imm">Interacting Multiple Model (IMM)</option>
-                <option value="ukf">Unscented Kalman Filter (UKF)</option>
-                <option value="optical_flow">Optical Flow Assisted</option>
-              </select>
-            </div>
-            <div class="form-row">
-              <label>Acquisition Confirmation Frames</label>
-              <input type="number" class="form-input" id="trk-acq-frames" value="5" min="1" max="15">
-            </div>
-            <div class="form-row">
-              <label>Loss Confirmation Frames</label>
-              <input type="number" class="form-input" id="trk-loss-frames" value="10" min="3" max="30">
-            </div>
-            <div class="form-row">
-              <label>Lock Pointing Tolerance</label>
-              <span class="stat-value">25 px (from Boresight)</span>
+              <label>Max Target Area (px)</label>
+              <input type="number" class="form-input" id="inp-max-area" value="500" min="50" max="2000">
             </div>
           </div>
 
-          <!-- Center Column: Candidate Detection Canvas & Tracking State Machine -->
-          <div class="card-box" style="display: flex; flex-direction: column;">
-            <div class="card-box-title">Target Identification & Candidate Verification</div>
-            <div class="env-viewport-wrapper" style="height: 240px;">
-              <canvas id="studio-cv-canvas" width="500" height="240"></canvas>
-            </div>
-            <div class="cv-legend-strip" style="margin-top: 4px;">
-              <span class="cv-leg green">■ Detected Target</span>
-              <span class="cv-leg red">■ Other Candidates (False Alarms)</span>
-              <span class="cv-leg dashed">□ Dynamic Search Region</span>
-            </div>
-
-            <div class="card-box-title" style="margin-top: 14px;">Tracking State Machine Stepper</div>
-            <div class="state-machine-flow">
-              <span class="sm-node" id="sm-init">INIT</span> →
-              <span class="sm-node" id="sm-search">SEARCH</span> →
-              <span class="sm-node" id="sm-candidate">CANDIDATE</span> →
-              <span class="sm-node" id="sm-verify">VERIFY</span> →
-              <span class="sm-node" id="sm-acquire">ACQUIRE</span> →
-              <span class="sm-node active" id="sm-track">TRACK</span> →
-              <span class="sm-node" id="sm-degraded">DEGRADED</span> →
-              <span class="sm-node" id="sm-predict">PREDICT</span> →
-              <span class="sm-node" id="sm-reacquire">REACQUIRE</span>
-            </div>
-          </div>
-
-          <!-- Right Column: Physics-Informed Optical Estimation Layer -->
-          <div class="card-box" style="border-left: 3px solid var(--color-cyan);">
-            <div class="card-box-title" style="color: var(--color-cyan);">
-              ⚛ Physics-Informed Optical & Atmospheric Estimation Layer
-            </div>
-            <p class="workbench-text-muted" style="margin-bottom: 10px;">
-              Future conceptual pipeline: Atmospheric/propagation conditions → observable beacon behavior → optical-state estimation → beacon trajectory prediction → adaptive acquisition.
-            </p>
-
-            <div class="physics-vertical-list">
-              <div class="physics-card">
-                <div class="phys-title">Refractive Turbulence (Cₙ²)</div>
-                <div class="phys-val cyan">1.4 × 10⁻¹⁴ m⁻²/³</div>
-                <div class="phys-sub">Fried Parameter r₀: 4.8 cm | Path: 5.0 km</div>
-              </div>
-              <div class="physics-card">
-                <div class="phys-title">Beacon Scintillation Index (σₗ²)</div>
-                <div class="phys-val green">σₗ² = 0.18</div>
-                <div class="phys-sub">Intensity Trend: Stable Coherent Beam</div>
-              </div>
-              <div class="physics-card">
-                <div class="phys-title">Apparent Beam Wander</div>
-                <div class="phys-val amber">±2.4 px spatial variance</div>
-                <div class="phys-sub">Temporal Slew Drift: Steady Nominal</div>
-              </div>
-              <div class="physics-card">
-                <div class="phys-title">Predicted FOV-Entry Region</div>
-                <div class="phys-val purple">Quadrant 1 (Top-Right)</div>
-                <div class="phys-sub">Uncertainty Ellipse: 14 px major axis</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- =====================================================================
-           VIEW 7: SIMULATION CONTROL ROOM & EXECUTION STATE
-           Answers: "HOW DO I EXECUTE THE SIMULATION?"
-           ===================================================================== -->
-      <section id="view-sim-control" class="view-section hidden">
-        <div class="workbench-header">
-          <div class="workbench-title">SIMULATION CONTROL ROOM & EXECUTION STATE</div>
-          <div class="workbench-desc">Control closed-loop execution, step frame-by-frame for benchmark analysis, configure PRNG seed, and select scenario presets.</div>
-        </div>
-
-        <div class="sim-studio-layout">
-          <!-- Left: Master Controls & State Marquee -->
+          <!-- Right: State Machine & Estimator Tuning -->
           <div class="card-box">
-            <div class="card-box-title">Executive Status Marquee</div>
-            <div class="sim-status-banner" id="sim-status-banner">
-              <span class="status-indicator-lamp active" id="sim-status-lamp"></span>
-              <span class="status-indicator-text" id="sim-banner-text">STATUS: RUNNING</span>
-            </div>
-
-            <div class="card-box-title" style="margin-top: 14px;">Master Executive Controls</div>
-            <div class="btn-group-column">
-              <button class="btn btn-hero btn-hero-start" id="ctrl-btn-start">▶ Start Closed-Loop Simulation</button>
-              <button class="btn btn-hero btn-hero-pause" id="ctrl-btn-pause">⏸ Pause Execution</button>
-              <button class="btn btn-hero btn-hero-stop" id="ctrl-btn-stop">⏹ Stop Execution</button>
-              <button class="btn btn-hero" id="ctrl-btn-step" style="background: #0277bd;">⏭ Step Single Frame (0.033s)</button>
-              <button class="btn btn-hero" id="ctrl-btn-reset" style="background: #37474f;">⟳ Reset Simulation State</button>
-            </div>
-
-            <div class="card-box-title" style="margin-top: 14px;">Execution Mode & Duration</div>
-            <div class="sim-mode-radios" style="margin-bottom: 8px;">
-              <label class="radio-label"><input type="radio" name="ctrl-sim-mode" value="continuous" checked> Continuous Mode</label>
-              <label class="radio-label"><input type="radio" name="ctrl-sim-mode" value="fixed"> Fixed Time</label>
+            <div class="card-box-title">Tracking State Machine & Kalman Estimator Tuning</div>
+            <div class="form-row">
+              <label>Acquisition Threshold (Frames)</label>
+              <input type="number" class="form-input" id="inp-acq-frames" value="1" min="1" max="10">
             </div>
             <div class="form-row">
-              <label>Fixed Duration (seconds)</label>
-              <input type="number" class="form-input" id="ctrl-fixed-duration" value="60" min="10" max="600">
+              <label>Track Loss Threshold (Frames)</label>
+              <input type="number" class="form-input" id="inp-loss-frames" value="10" min="2" max="30">
             </div>
             <div class="form-row">
-              <label>Execution Speed Factor</label>
-              <select class="form-select" id="ctrl-speed-factor">
-                <option value="0.5">0.5x (Slow Motion Diagnostics)</option>
-                <option value="1.0" selected>1.0x (Real-Time 30 Hz)</option>
-                <option value="2.0">2.0x (Accelerated Batch)</option>
-                <option value="5.0">5.0x (High-Speed Stress Test)</option>
-              </select>
+              <label>Kalman Process Noise (q)</label>
+              <input type="number" class="form-input" id="inp-kalman-q" value="0.1" step="0.01" min="0.001" max="10.0">
             </div>
             <div class="form-row">
-              <label>Deterministic PRNG Seed</label>
-              <input type="number" class="form-input" id="ctrl-seed-val" value="26169">
+              <label>Kalman Measurement Noise (r)</label>
+              <input type="number" class="form-input" id="inp-kalman-r" value="1.0" step="0.1" min="0.1" max="20.0">
             </div>
           </div>
+        </div>
 
-          <!-- Right: Scenario Selection & Pipeline Timing -->
-          <div style="display: flex; flex-direction: column; gap: 10px;">
-            <div class="card-box">
-              <div class="card-box-title">Evaluation Scenario Preset Catalog</div>
-              <div class="form-row">
-                <label>Scenario Preset</label>
-                <select class="form-select" id="ctrl-scenario-select" style="width: 260px;">
-                  <option value="nominal" selected>Nominal Coarse Tracking (Default)</option>
-                  <option value="high_noise">Heavy Noise & Scintillation</option>
-                  <option value="platform_jitter">High Platform Vibration & Jitter</option>
-                  <option value="atmospheric_fog">Dense Fog & Low Contrast</option>
-                  <option value="fast_maneuver">High Dynamic Slew & Reacquisition</option>
-                </select>
-              </div>
-              <div class="scenario-details-box" id="ctrl-scenario-desc">
-                <strong>Nominal Coarse Tracking:</strong> Clean environment, low sensor jitter (±2 px), Figure-8 trajectory, 30 Hz sensor rate, 20 Hz pan-tilt control.
-              </div>
-              <button class="btn btn-action" id="btn-ctrl-load-scenario" style="margin-top: 8px;">Load & Initialize Scenario</button>
+        <!-- Middle: Live Angular Pointing Error Graph (Dedicated Feature Placement) -->
+        <div class="card-box">
+          <div class="card-box-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>📈 Live Angular Pointing Error & LOS Recentering (vs Time)</span>
+            <span class="status-badge active"><span class="status-dot"></span> Live Kinematics</span>
+          </div>
+          <div class="chart-wrapper-large" style="height: 180px; position: relative;">
+            <canvas id="detection-angular-error-chart" width="700" height="180"></canvas>
+          </div>
+          <div class="stat-grid-4col" style="margin-top: 8px;">
+            <div class="stat-mini-card">
+              <span class="stat-mini-label">POINT ERROR (FPA)</span>
+              <span class="stat-mini-val cyan" id="det-point-error-val">0.0 px</span>
+              <span class="stat-mini-sub">Sensor Plane Offset</span>
             </div>
-
-            <div class="card-box" style="flex: 1;">
-              <div class="card-box-title">Live Pipeline Timing & Loop Telemetry</div>
-              <table class="stat-table">
-                <tr><td class="stat-label">Simulation Master Clock</td><td class="stat-value" id="tm-sim-clock">00:00.00</td></tr>
-                <tr><td class="stat-label">Frame Counter</td><td class="stat-value" id="tm-frame-count">00000</td></tr>
-                <tr><td class="stat-label">Sensor Optical Rate</td><td class="stat-value">Target 30.0 Hz</td></tr>
-                <tr><td class="stat-label">Gimbal Slew Control Rate</td><td class="stat-value">Target 20.0 Hz (50 ms)</td></tr>
-                <tr><td class="stat-label">Sensor Processing Latency</td><td class="stat-value" id="tm-proc-latency">1.8 ms</td></tr>
-                <tr><td class="stat-label">Timing Jitter</td><td class="stat-value">&lt; 0.4 ms (Nominal)</td></tr>
-              </table>
+            <div class="stat-mini-card">
+              <span class="stat-mini-label">ANGULAR POINTING ERROR</span>
+              <span class="stat-mini-val green" id="det-ang-error-val">0.0 mdeg</span>
+              <span class="stat-mini-sub">Optical Axis Displacement</span>
+            </div>
+            <div class="stat-mini-card">
+              <span class="stat-mini-label">MEAN POINTING ERROR</span>
+              <span class="stat-mini-val" id="det-avg-error-val">0.0 mdeg</span>
+              <span class="stat-mini-sub">Cumulative Average</span>
+            </div>
+            <div class="stat-mini-card">
+              <span class="stat-mini-label">RMSE TRACKING ERROR</span>
+              <span class="stat-mini-val" id="det-rmse-error-val">0.0 mdeg</span>
+              <span class="stat-mini-sub">Root-Mean-Square</span>
             </div>
           </div>
         </div>
       </section>
 
       <!-- =====================================================================
-           VIEW 8: LIVE TRACKING COCKPIT & CLOSED-LOOP FLOW
-           Answers: "WHAT IS HAPPENING IN THE CLOSED LOOP RIGHT NOW?"
+           VIEW: SIMULATION CONTROL WORKBENCH
            ===================================================================== -->
-      <section id="view-live-tracking" class="view-section hidden">
+      <section id="view-sim-control" class="view-section">
         <div class="workbench-header">
-          <div class="workbench-title">LIVE TRACKING COCKPIT & CLOSED-LOOP FLOW</div>
-          <div class="workbench-desc">Real-time closed-loop alignment HUD, error vector driving to zero, and Benchmark-2 external video input mode.</div>
+          <div class="workbench-header-left">
+            <div class="workbench-title">SIMULATION CONTROL & SPEED BENCHMARK</div>
+            <div class="workbench-desc">Execute the closed-loop tracking loop in real-time, step single frames, and run automated ISRO test sequences.</div>
+          </div>
+          <span class="category-tag live">RUNTIME DISPATCHER</span>
         </div>
 
-        <!-- End-to-End Closed-Loop Pipeline Flowchart -->
-        <div class="card-box" style="margin-bottom: 10px;">
-          <div class="card-box-title">Closed-Loop Coarse Tracking Dataflow</div>
-          <div class="pipeline-flowchart">
-            <div class="flow-step"><div class="flow-box">640×480 FPA</div><div class="flow-sub">Sensor Frame</div></div>
-            <div class="flow-arrow">➔</div>
-            <div class="flow-step"><div class="flow-box">AI/CV DETECTION</div><div class="flow-sub">Adaptive / LoG</div></div>
-            <div class="flow-arrow">➔</div>
-            <div class="flow-step"><div class="flow-box">TARGET IDENTIFICATION</div><div class="flow-sub">Beacon Spot</div></div>
-            <div class="flow-arrow">➔</div>
-            <div class="flow-step"><div class="flow-box">CENTROID ESTIMATION</div><div class="flow-sub">Sub-px IW-CoG</div></div>
-            <div class="flow-arrow">➔</div>
-            <div class="flow-step"><div class="flow-box">MOTION PREDICTION</div><div class="flow-sub">Kalman / IMM</div></div>
-            <div class="flow-arrow">➔</div>
-            <div class="flow-step"><div class="flow-box">PAN-TILT CONTROL</div><div class="flow-sub">5°/s Slew Rate</div></div>
-            <div class="flow-arrow">➔</div>
-            <div class="flow-step"><div class="flow-box active">CLOSED LOOP RECENTER</div><div class="flow-sub">Error Vector → 0</div></div>
+        <!-- Primary Simulation Controls -->
+        <div class="card-box" style="padding: 12px;">
+          <div class="card-box-title" style="margin-bottom: 10px;">Simulation Engine Execution Controls</div>
+          <div class="btn-group-wrap" style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button class="btn btn-start" id="btn-sim-start" style="padding: 10px 18px; font-size: 13px;">▶ START SIMULATION</button>
+            <button class="btn btn-pause" id="btn-sim-pause" style="padding: 10px 18px; font-size: 13px;">⏸ PAUSE</button>
+            <button class="btn btn-step" id="btn-sim-step" style="padding: 10px 18px; font-size: 13px;">⏭ STEP FRAME</button>
+            <button class="btn btn-reset" id="btn-sim-reset" style="padding: 10px 18px; font-size: 13px;">↺ RESET SIMULATION</button>
+          </div>
+
+          <div style="display: flex; gap: 14px; margin-top: 14px; align-items: center; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span style="font-size: 11px; font-weight: 700; color: var(--text-secondary);">SPEED:</span>
+              <button class="btn-speed-pill active" data-speed="1.0">1.0x</button>
+              <button class="btn-speed-pill" data-speed="2.0">2.0x</button>
+              <button class="btn-speed-pill" data-speed="5.0">5.0x</button>
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <label class="chk-label"><input type="checkbox" id="chk-auto-track" checked> Closed-Loop Auto-Track Active</label>
+            </div>
           </div>
         </div>
 
-        <div class="live-cockpit-layout">
-          <!-- Main Boresight Alignment HUD -->
-          <div class="card-box" style="display: flex; flex-direction: column;">
-            <div class="card-box-title">Camera Boresight Alignment HUD (Sensor Center (+) vs Centroid (●))</div>
-            <div class="env-viewport-wrapper" style="flex: 1; min-height: 380px;">
-              <canvas id="cockpit-hud-canvas" width="640" height="380"></canvas>
+        <!-- Automated Benchmark-1 Scenarios -->
+        <div class="card-box">
+          <div class="card-box-title">Benchmark-1: Automated ISRO PS-26169 Evaluation Scenarios</div>
+          <p class="workbench-text-muted" style="margin-bottom: 8px;">
+            Execute deterministic 300-frame test scenarios with automated compliance audit scoring.
+          </p>
+          <div class="btn-group-wrap" style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <button class="btn btn-action" id="btn-b1-nominal">Nominal Tracking (Circular)</button>
+            <button class="btn btn-action" id="btn-b1-noise">High-Noise Challenge</button>
+            <button class="btn btn-action" id="btn-b1-evasive">Evasive Maneuver (Fig-8)</button>
+            <button class="btn btn-action" id="btn-b1-dropout">Temporary Loss & Re-Acquisition</button>
+          </div>
+          <div id="b1-status-banner" style="margin-top: 10px; padding: 6px 10px; background: rgba(0, 210, 255, 0.08); border-left: 3px solid var(--color-cyan); font-size: 10.5px; font-family: var(--font-mono); color: var(--color-cyan);">
+            Benchmark Status: Ready for automated test execution.
+          </div>
+        </div>
+      </section>
+
+      <!-- =====================================================================
+           VIEW: LIVE TRACKING HUD & BENCHMARK-2 WORKSPACE
+           ===================================================================== -->
+      <section id="view-live-tracking" class="view-section">
+        <div class="workbench-header">
+          <div class="workbench-header-left">
+            <div class="workbench-title">OPTICAL TRACKING HUD & BENCHMARK-2 PIPELINE</div>
+            <div class="workbench-desc">Real-time optical tracking instrumentation, 7-stage pipeline breakdown, and offline video dataset processor.</div>
+          </div>
+          <span class="category-tag live">LIVE HUD VIEWPORT</span>
+        </div>
+
+        <!-- Full Optical Tracking HUD Canvas -->
+        <div class="card-box">
+          <div class="card-box-title" style="display: flex; justify-content: space-between; align-items: center;">
+            <span>📷 Full Optical Camera Tracking Viewport (640×480 FPA)</span>
+            <span class="status-badge active"><span class="status-dot"></span> Boresight (320, 240)</span>
+          </div>
+          <div class="cam-viewport-wrapper" style="height: 280px; position: relative;">
+            <canvas id="cockpit-hud-canvas" width="640" height="280"></canvas>
+          </div>
+          <div class="stat-grid-4col" style="margin-top: 8px;">
+            <div class="stat-mini-card">
+              <span class="stat-mini-label">CENTROID COORDINATES</span>
+              <span class="stat-mini-val cyan" id="hud-centroid-val">(320.0, 240.0)</span>
             </div>
-            <div class="cam-telemetry-bar">
-              <span>Boresight Crosshair: (320, 240)</span>
-              <span>Target Centroid: <strong id="hud-centroid-val" class="cyan-val">(320, 240)</strong></span>
-              <span>Error Vector: <strong id="hud-vector-val" class="cyan-val">0.0 px</strong></span>
-              <span>Pan: <strong id="hud-pan-val" class="green-val">0.00°</strong></span>
-              <span>Tilt: <strong id="hud-tilt-val" class="green-val">0.00°</strong></span>
+            <div class="stat-mini-card">
+              <span class="stat-mini-label">CENTROID ERROR VECTOR</span>
+              <span class="stat-mini-val green" id="hud-vector-val">0.0 px</span>
+            </div>
+            <div class="stat-mini-card">
+              <span class="stat-mini-label">GIMBAL PAN ANGLE</span>
+              <span class="stat-mini-val" id="hud-pan-val">0.00°</span>
+            </div>
+            <div class="stat-mini-card">
+              <span class="stat-mini-label">GIMBAL TILT ANGLE</span>
+              <span class="stat-mini-val" id="hud-tilt-val">0.00°</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pipeline Flowchart & Benchmark-2 Video Runner -->
+        <div class="workbench-layout-2col">
+          <!-- Left: 7-Stage Pipeline Status Flowchart -->
+          <div class="card-box">
+            <div class="card-box-title">Live 7-Stage Processing Pipeline Flow</div>
+            <div class="pipeline-flow-vertical" style="display: flex; flex-direction: column; gap: 4px; margin-top: 6px;">
+              <div class="pipeline-stage-box" id="pipe-step-sensor">1. Sensor Acquisition & Degradation (640×480 @ 30 Hz)</div>
+              <div class="pipeline-stage-box" id="pipe-step-detect">2. Adaptive Thresholding & Background Removal</div>
+              <div class="pipeline-stage-box" id="pipe-step-identify">3. Target Identification & False Candidate Rejection</div>
+              <div class="pipeline-stage-box" id="pipe-step-centroid">4. IW-CoG Sub-Pixel Centroiding Estimation</div>
+              <div class="pipeline-stage-box" id="pipe-step-predict">5. Recursive Kalman State Filter & Prediction</div>
+              <div class="pipeline-stage-box" id="pipe-step-pantilt">6. Closed-Loop Gimbal Slew Command Generation</div>
+              <div class="pipeline-stage-box" id="pipe-step-recenter">7. Boresight Recentering & Alignment Verification</div>
             </div>
           </div>
 
-          <!-- Benchmark-2: External MP4 Video Input Card -->
-          <div class="card-box" style="border-left: 3px solid var(--color-cyan);">
-            <div class="card-box-title">Benchmark-2: External Video Input (PTZ Bypassed)</div>
-            <div class="status-banner red" style="margin-bottom: 8px;">
-              <strong>PTZ BYPASS ACTIVE:</strong> Camera gimbal servo is bypassed. Video frames pass directly to AI/CV detection & tracking.
+          <!-- Right: Benchmark-2 Video Runner -->
+          <div class="card-box">
+            <div class="card-box-title">Benchmark-2: Offline Video Dataset Processor</div>
+            <p class="workbench-text-muted">
+              Process external MP4 recorded flight video datasets without pan-tilt feedback loop (gimbal bypassed).
+            </p>
+            <input type="file" id="b2-video-file" accept="video/mp4,video/*" style="margin: 8px 0; font-size: 11px;">
+            <div id="b2-video-info" style="font-size: 10px; color: var(--text-secondary); margin-bottom: 6px; font-family: var(--font-mono);">
+              No file selected. Please select a recorded flight video.
             </div>
-            <div class="form-row">
-              <label>Select .MP4 Video File (@ 30 FPS)</label>
-              <input type="file" id="b2-video-file" accept="video/mp4" class="form-input">
+            <div class="cam-viewport-wrapper" style="height: 120px; margin-bottom: 8px;">
+              <canvas id="b2-display-canvas" width="440" height="120"></canvas>
             </div>
-            <div id="b2-video-info" style="font-family: var(--font-mono); font-size: 10px; color: var(--color-cyan); margin: 6px 0;">No file selected</div>
-            <button class="btn btn-start" id="btn-start-benchmark2" disabled>▶ Process Benchmark Video</button>
-            <div id="b2-status-text" style="font-family: var(--font-mono); font-size: 9.5px; color: var(--text-secondary); margin-top: 6px;">Awaiting file upload...</div>
-            <div class="env-viewport-wrapper" style="height: 180px; margin-top: 10px;">
-              <canvas id="b2-display-canvas" width="640" height="180"></canvas>
+            <button class="btn btn-start" id="btn-start-benchmark2" disabled style="width: 100%;">Run Benchmark-2 Processing</button>
+            <div id="b2-status-text" style="font-size: 10px; color: var(--text-muted); margin-top: 6px;">
+              Status: Idle.
             </div>
           </div>
         </div>
       </section>
 
       <!-- =====================================================================
-           VIEW 9: PERFORMANCE & ANALYSIS (PERFORMANCE ANALYTICS & BENCHMARKING)
-           Answers: "HOW WELL DID THE SYSTEM PERFORM?"
+           VIEW: PERFORMANCE & ANALYSIS
            ===================================================================== -->
-      <section id="view-performance" class="view-section hidden">
+      <section id="view-performance" class="view-section">
         <div class="workbench-header">
-          <div class="workbench-title">PERFORMANCE ANALYTICS & BENCHMARKING</div>
-          <div class="workbench-desc">Objective verification against PS-26169 benchmark criteria: Tracking Error ≤ 10 px, Acquisition ≤ 2.0 s, Loss &lt; 5%, Speed ≥ 20 FPS.</div>
+          <div class="workbench-header-left">
+            <div class="workbench-title">PERFORMANCE METRICS & PS COMPLIANCE</div>
+            <div class="workbench-desc">Evaluate quantitative tracking compliance against ISRO PS-26169 benchmark criteria.</div>
+          </div>
+          <span class="category-tag result">AUDIT & COMPLIANCE</span>
         </div>
 
-        <!-- PS-26169 Compliance Verification Matrix -->
-        <div class="card-box" style="margin-bottom: 10px;">
-          <div class="card-box-title">PS-26169 Benchmark Compliance Verification Matrix</div>
+        <!-- Quantitative Metric Summary Cards -->
+        <div class="stat-grid-4col">
+          <div class="stat-mini-card">
+            <span class="stat-mini-label">ACQUISITION TIME</span>
+            <span class="stat-mini-val cyan" id="pcard-val-acq">—</span>
+            <span class="stat-mini-sub">Ref: &le; 5.0 s</span>
+          </div>
+          <div class="stat-mini-card">
+            <span class="stat-mini-label">AVERAGE CENTROID ERROR</span>
+            <span class="stat-mini-val green" id="pcard-val-avg">—</span>
+            <span class="stat-mini-sub">Ref: &le; 10.0 px (62.5 mdeg)</span>
+          </div>
+          <div class="stat-mini-card">
+            <span class="stat-mini-label">RMSE TRACKING ERROR</span>
+            <span class="stat-mini-val" id="pcard-val-rmse">—</span>
+            <span class="stat-mini-sub">Root-Mean-Square</span>
+          </div>
+          <div class="stat-mini-card">
+            <span class="stat-mini-label">PROCESSING SPEED</span>
+            <span class="stat-mini-val green" id="pcard-val-fps">—</span>
+            <span class="stat-mini-sub">Ref: &ge; 20.0 FPS</span>
+          </div>
+        </div>
+
+        <!-- Detailed Compliance Matrix Table -->
+        <div class="card-box">
+          <div class="card-box-title">ISRO PS-26169 Quantitative Compliance Audit Matrix</div>
           <table class="data-table">
             <thead>
               <tr>
                 <th>Benchmark Metric</th>
-                <th>PS-26169 Requirement</th>
-                <th>Measured Simulation Value</th>
+                <th>PS Reference Limit</th>
+                <th>Measured Value</th>
                 <th>Compliance Status</th>
-                <th>Remarks</th>
+                <th>Technical Requirement Description</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody id="compliance-matrix-body">
               <tr>
                 <td><strong>Acquisition Time</strong></td>
-                <td>≤ 2.00 s</td>
-                <td id="perf-val-acq">1.32 s</td>
-                <td><span class="badge-locked">PASS (Within Limit)</span></td>
-                <td>Initial coarse acquisition from FOV edge</td>
+                <td>&le; 5.00 s</td>
+                <td id="tbl-acq-measured">—</td>
+                <td id="tbl-acq-status"><span class="badge-eval badge-pending">PENDING</span></td>
+                <td>Time to achieve first locked tracking on target</td>
               </tr>
               <tr>
-                <td><strong>Average Tracking Error</strong></td>
-                <td>≤ 10.0 px</td>
-                <td id="perf-val-err">3.8 px</td>
-                <td><span class="badge-locked">PASS (Within Limit)</span></td>
-                <td>Continuous closed-loop boresight offset</td>
+                <td><strong>Mean Pointing Error</strong></td>
+                <td>&le; 10.00 px (62.5 mdeg)</td>
+                <td id="tbl-err-measured">—</td>
+                <td id="tbl-err-status"><span class="badge-eval badge-pending">PENDING</span></td>
+                <td>Steady-state optical centroid offset from boresight</td>
               </tr>
               <tr>
-                <td><strong>Target Loss Rate</strong></td>
-                <td>&lt; 5.0 %</td>
-                <td id="perf-val-loss">1.2 %</td>
-                <td><span class="badge-locked">PASS (Within Limit)</span></td>
-                <td>Frames lost due to high-magnitude disturbances</td>
+                <td><strong>RMSE Tracking Error</strong></td>
+                <td>&le; 12.00 px (75.0 mdeg)</td>
+                <td id="tbl-rmse-measured">—</td>
+                <td id="tbl-rmse-status"><span class="badge-eval badge-pending">PENDING</span></td>
+                <td>Root-mean-square tracking stability error</td>
               </tr>
               <tr>
-                <td><strong>Re-acquisition Time</strong></td>
-                <td>≤ 1.00 s</td>
-                <td id="perf-val-reacq">0.58 s</td>
-                <td><span class="badge-locked">PASS (Within Limit)</span></td>
-                <td>Recovery time following disturbance occlusion</td>
+                <td><strong>Processing Frame Rate</strong></td>
+                <td>&ge; 20.00 FPS</td>
+                <td id="tbl-fps-measured">—</td>
+                <td id="tbl-fps-status"><span class="badge-eval badge-pending">PENDING</span></td>
+                <td>Real-time closed-loop frame processing throughput</td>
               </tr>
               <tr>
-                <td><strong>Processing Speed</strong></td>
-                <td>≥ 20.0 FPS</td>
-                <td id="perf-val-fps">30.0 FPS</td>
-                <td><span class="badge-locked">PASS (Meets Criteria)</span></td>
-                <td>Real-time computer vision frame throughput</td>
-              </tr>
-              <tr>
-                <td><strong>RMSE Centroid Error</strong></td>
-                <td>Benchmark Criteria</td>
-                <td id="perf-val-rmse">3.8 px</td>
-                <td><span class="badge-locked">NOMINAL</span></td>
-                <td>Root-mean-square tracking error</td>
+                <td><strong>Tracking Continuity Rate</strong></td>
+                <td>&ge; 90.00 %</td>
+                <td id="tbl-lock-measured">—</td>
+                <td id="tbl-lock-status"><span class="badge-eval badge-pending">PENDING</span></td>
+                <td>Fraction of run frames maintaining locked/tracking status</td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <!-- Real-Time Telemetry Charts -->
+        <!-- Angular Error & Slew Performance Chart -->
         <div class="workbench-layout-2col">
           <div class="card-box">
-            <div class="card-box-title">Centroiding Tracking Error vs Time (PS Reference ≤ 10 px)</div>
-            <canvas id="perf-error-chart" width="500" height="200" style="width: 100%; height: auto;"></canvas>
+            <div class="card-box-title">Mission-Wide Angular Pointing Error Trend (mdeg vs Time)</div>
+            <div class="cam-viewport-wrapper" style="height: 170px;">
+              <canvas id="perf-ang-chart" width="360" height="170"></canvas>
+            </div>
           </div>
           <div class="card-box">
-            <div class="card-box-title">Processing Speed vs Time (PS Reference ≥ 20 FPS)</div>
-            <canvas id="perf-fps-chart" width="500" height="200" style="width: 100%; height: auto;"></canvas>
+            <div class="card-box-title">Pan & Tilt Gimbal Slew Angles (° vs Time)</div>
+            <div class="cam-viewport-wrapper" style="height: 170px;">
+              <canvas id="perf-pantilt-chart" width="360" height="170"></canvas>
+            </div>
           </div>
         </div>
       </section>
 
       <!-- =====================================================================
-           VIEW 10: REPORTS & LOGS (REPORTS & TELEMETRY LOG CENTER)
-           Answers: "WHAT HAPPENED AND WHAT EVIDENCE WAS RECORDED?"
+           VIEW: REPORTS & LOGS
            ===================================================================== -->
-      <section id="view-reports" class="view-section hidden">
-        <div class="workbench-header" style="display: flex; justify-content: space-between; align-items: center;">
-          <div>
-            <div class="workbench-title">REPORTS & TELEMETRY LOG CENTER</div>
-            <div class="workbench-desc">Frame-by-frame telemetry logs, mission event audit trails, and automated PS-26169 report generation.</div>
+      <section id="view-reports" class="view-section">
+        <div class="workbench-header">
+          <div class="workbench-header-left">
+            <div class="workbench-title">REPORTS & AUDIT LOGS</div>
+            <div class="workbench-desc">Inspect frame-by-frame evidence, filter audit logs, and export telemetry datasets.</div>
           </div>
-          <div class="btn-group">
-            <button class="btn btn-action" id="btn-export-csv">📥 Export CSV Log</button>
-            <button class="btn btn-action" id="btn-export-json">💾 Download JSON</button>
-            <button class="btn btn-start" id="btn-print-report">🖨 Generate & Print PDF Report</button>
-            <button class="btn btn-reset" id="btn-clear-logs">🗑 Clear Logs</button>
-          </div>
+          <span class="category-tag result">EVIDENCE AUDIT</span>
         </div>
 
-        <!-- Search and Filter Bar -->
-        <div class="card-box" style="padding: 6px 10px; margin-bottom: 8px; display: flex; align-items: center; justify-content: space-between;">
-          <div class="filter-btn-group">
-            <button class="btn-filter-pill active" data-filter="ALL">ALL LOGS</button>
-            <button class="btn-filter-pill" data-filter="INFO">INFO</button>
-            <button class="btn-filter-pill" data-filter="SUCCESS">SUCCESS</button>
-            <button class="btn-filter-pill" data-filter="WARN">WARNING</button>
-            <button class="btn-filter-pill" data-filter="ERROR">ERROR</button>
+        <!-- Action Bar: VIEW filters & EXPORT buttons -->
+        <div class="card-box" style="padding: 8px 12px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+          <!-- VIEW Filters -->
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="font-size: 10px; font-weight: 700; color: var(--color-cyan);">VIEW:</span>
+            <div class="filter-btn-group">
+              <button class="btn-filter-pill active" data-filter="ALL">ALL</button>
+              <button class="btn-filter-pill" data-filter="LOCKED">LOCKED</button>
+              <button class="btn-filter-pill" data-filter="ACQUIRING">ACQUIRING</button>
+              <button class="btn-filter-pill" data-filter="LOST">LOST</button>
+            </div>
+            <input type="text" class="form-input" id="inp-log-search" placeholder="Search frame log..." style="width: 140px;">
           </div>
+
+          <!-- EXPORT & CLEAR -->
           <div style="display: flex; align-items: center; gap: 6px;">
-            <label style="font-size: 10px; color: var(--text-secondary);">Search Log:</label>
-            <input type="text" class="form-input" id="inp-log-search" placeholder="Filter message text..." style="width: 180px;">
+            <span style="font-size: 10px; font-weight: 700; color: var(--color-green);">EXPORT:</span>
+            <button class="btn btn-action" id="btn-export-csv" style="font-size: 11px; padding: 6px 10px;">📥 Export CSV</button>
+            <button class="btn btn-action" id="btn-export-json" style="font-size: 11px; padding: 6px 10px;">💾 JSON</button>
+            <button class="btn btn-start" id="btn-print-report" style="font-size: 11px; padding: 6px 10px;">🖨 PDF Report</button>
+            <span style="color: var(--border-subtle);">|</span>
+            <button class="btn btn-reset" id="btn-clear-logs" style="font-size: 11px; padding: 6px 10px;">🗑 Clear</button>
           </div>
         </div>
 
@@ -1375,15 +940,110 @@
       </section>
 
     </main>
+
+    <!-- =========================================================================
+         Persistent Right-Side LIVE MISSION VIEW (Dominant Large Virtual Camera)
+         ========================================================================= -->
+    <aside class="persistent-mission-panel" id="persistent-mission-panel">
+      <!-- Panel Header -->
+      <div class="persistent-panel-header">
+        <div class="persistent-header-left">
+          <span class="live-dot-pulse"></span>
+          <div>
+            <div class="persistent-panel-title">LIVE MISSION VIEW</div>
+            <div class="persistent-panel-sub">Optical Camera Viewport & Real-Time Tracking</div>
+          </div>
+        </div>
+        <span class="persistent-status-pill ready" id="persistent-status-badge">READY</span>
+      </div>
+
+      <!-- A. LARGE WIDE VIRTUAL CAMERA VIEWPORT -->
+      <div class="persistent-cam-card" id="persistent-cam-card">
+        <div class="persistent-canvas-wrapper">
+          <canvas id="persistent-cam-canvas" width="800" height="520"></canvas>
+        </div>
+      </div>
+
+      <!-- B. Ultra-Compact Bottom Telemetry Strip & Quick Controls -->
+      <div class="persistent-telemetry-strip">
+        <div class="telemetry-strip-grid-compact">
+          <div class="telemetry-compact-cell">
+            <span class="cell-label">STATE</span>
+            <span class="cell-val status-text ready" id="persistent-val-state">READY</span>
+          </div>
+          <div class="telemetry-compact-cell">
+            <span class="cell-label">CONFIDENCE</span>
+            <span class="cell-val" id="persistent-val-conf">—</span>
+          </div>
+          <div class="telemetry-compact-cell">
+            <span class="cell-label">CENTROID (X,Y)</span>
+            <span class="cell-val cyan" id="persistent-val-centroid">(320.0, 240.0)</span>
+          </div>
+          <div class="telemetry-compact-cell">
+            <span class="cell-label">POINT ERROR</span>
+            <span class="cell-val cyan" id="persistent-side-point-err">0.0 px</span>
+          </div>
+          <div class="telemetry-compact-cell">
+            <span class="cell-label">ANG ERROR</span>
+            <span class="cell-val green" id="persistent-side-ang-err">0.0 mdeg</span>
+          </div>
+          <div class="telemetry-compact-cell">
+            <span class="cell-label">PAN ANGLE</span>
+            <span class="cell-val green" id="persistent-val-pan">0.00°</span>
+          </div>
+          <div class="telemetry-compact-cell">
+            <span class="cell-label">TILT ANGLE</span>
+            <span class="cell-val green" id="persistent-val-tilt">0.00°</span>
+          </div>
+          <div class="telemetry-compact-cell">
+            <span class="cell-label">FOV / FPS</span>
+            <span class="cell-val" style="font-size: 9.5px;"><span id="persistent-val-fov">4°×3°</span> | <span id="persistent-val-fps" class="green">30 FPS</span></span>
+          </div>
+        </div>
+
+        <div class="telemetry-bottom-controls-row">
+          <div class="telemetry-info-text">
+            <span id="persistent-tgt-label" style="font-family: var(--font-mono); font-size: 9.5px; color: var(--color-cyan); font-weight: 700;">T1 Beacon</span>
+            <span style="color: var(--border-subtle);">|</span>
+            <span style="font-size: 8.5px; color: var(--text-muted);">Coarse Tracking Loop (30 Hz)</span>
+          </div>
+          <div class="telemetry-quick-btn-group">
+            <button class="btn btn-start" id="persistent-btn-start" title="Start closed-loop simulation">▶ Start</button>
+            <button class="btn btn-pause" id="persistent-btn-pause" title="Pause simulation">⏸ Pause</button>
+            <button class="btn btn-step" id="persistent-btn-step" title="Step single frame">⏭ Step</button>
+            <button class="btn btn-reset" id="persistent-btn-reset" title="Reset simulation">↺ Reset</button>
+          </div>
+        </div>
+      </div>
+    </aside>
+
   </div>
 
   <!-- =========================================================================
-       4. Bottom Status Bar
+       Universal PS Requirements Modal Popover
+       ========================================================================= -->
+  <div class="ps-modal-backdrop hidden" id="ps-requirements-modal">
+    <div class="ps-modal-dialog">
+      <div class="ps-modal-header">
+        <div class="ps-modal-title" id="ps-modal-title">ISRO PS-26169 · System Requirements</div>
+        <button class="ps-modal-close" id="btn-close-ps-modal">✕</button>
+      </div>
+      <div class="ps-modal-body" id="ps-modal-body">
+        <!-- Dynamic content injected by app.js -->
+      </div>
+      <div class="ps-modal-footer">
+        <button class="btn btn-action" id="btn-ps-modal-ack">Understood / Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================================
+       Bottom Status Bar
        ========================================================================= -->
   <footer class="footer-bar">
     <span>PS 26169 | AI-Based Virtual Camera Tracking System for Coarse Alignment of Mobile FSOC Terminals</span>
     <span>Indian Space Research Organisation · Department of Space</span>
-    <span class="footer-mode">v1.0.0 | AEROSPACE MISSION WORKSTATION</span>
+    <span class="footer-mode">ISRO MISSION WORKSTATION</span>
   </footer>
 
   <!-- Scripts -->

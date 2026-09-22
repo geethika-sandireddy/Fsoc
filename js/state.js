@@ -92,20 +92,20 @@ export const SimulationState = {
     lastControlTime: 0
   },
 
-  // 4. Disturbances & Noise Engine
+  // 4. Disturbances & Noise Engine (Defaults to Clean / No Disturbance)
   disturbances: {
-    saltPepperEnabled: true,
-    saltPepperDensity: 10, // % (nominal ~10%)
-    gaussianEnabled: true,
-    gaussianStdDev: 10, // px (max 20 px)
-    poissonEnabled: true,
-    cameraJitterEnabled: true,
-    cameraJitterMagnitude: 3, // px/frame (max 20)
+    saltPepperEnabled: false,
+    saltPepperDensity: 0, // % (0 to 30%)
+    gaussianEnabled: false,
+    gaussianStdDev: 0, // px (0 to 20 px)
+    poissonEnabled: false,
+    cameraJitterEnabled: false,
+    cameraJitterMagnitude: 0, // px/frame (0 to 20)
     atmosphericCondition: 'Clear', // Clear, Haze, Fog, Rain, Low Light
     contrastReduction: 0.0, // 0.0 to 0.8
     brightnessReduction: 0.0, // 0.0 to 0.8
     platformMotionType: 'linear', // Linear (default/mandatory), Circular, Random, Spiral, Figure of 8
-    platformMotionMagnitude: 5, // px/frame (max 20)
+    platformMotionMagnitude: 0, // px/frame (0 to 20)
     platformMotionAngle: 45 // deg
   },
 
@@ -166,6 +166,8 @@ export const SimulationState = {
     maximumCentroidError: null,
     rmseCentroidError: null,
     instantaneousPointingError: null,
+    instantaneousAngularPointingError: null,
+    instantaneousAngularPointingErrorMdeg: null,
     panAngle: null,
     tiltAngle: null,
     simulationFPS: null,
@@ -183,6 +185,7 @@ export const SimulationState = {
       timestamps: [],
       centroidErrors: [],
       pointingErrors: [],
+      angularPointingErrors: [],
       panAngles: [],
       tiltAngles: [],
       processingFPS: []
@@ -236,6 +239,8 @@ export const SimulationState = {
     this.metrics.maximumCentroidError = null;
     this.metrics.rmseCentroidError = null;
     this.metrics.instantaneousPointingError = null;
+    this.metrics.instantaneousAngularPointingError = null;
+    this.metrics.instantaneousAngularPointingErrorMdeg = null;
     this.metrics.panAngle = 0.0;
     this.metrics.tiltAngle = 0.0;
     this.metrics.simulationFPS = null;
@@ -252,6 +257,7 @@ export const SimulationState = {
       timestamps: [],
       centroidErrors: [],
       pointingErrors: [],
+      angularPointingErrors: [],
       panAngles: [],
       tiltAngles: [],
       processingFPS: []

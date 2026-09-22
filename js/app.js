@@ -1,16 +1,10 @@
 /**
  * App Coordinator & View Controller — ISRO PS-26169 Mission Workstation.
- * Handles true architectural separation across all 10 dedicated workspaces:
- * 1. Home / Dashboard (Live Telemetry & Command Overview)
- * 2. Virtual Environment (Configuration Studio)
- * 3. Targets (Generator & Trajectory Designer)
- * 4. Camera & Pan-Tilt (Gimbal Kinematics & Manual Flight Controller)
- * 5. Disturbances & Noise (Injection Lab & Before/After Live Preview)
- * 6. Detection & Tracking (AI/CV Diagnostics & State Machine)
- * 7. Simulation Control (Executive State & Scenario Runner)
- * 8. Live Tracking (Cockpit HUD & Benchmark-2 Bypass)
- * 9. Performance & Analysis (Objective Benchmarking & Analytics)
- * 10. Reports & Logs (Audit Trail & Telemetry Center)
+ * Handles unified 9-step mission workflow across all 10 workspaces:
+ * - START: Home / Dashboard (Mission Overview & 9-Step Stepper)
+ * - SETUP (Steps 1-5): Virtual Environment, Targets, Camera & Pan-Tilt, Disturbances, Detection & Tracking
+ * - RUN (Steps 6-7): Simulation Control, Live Tracking
+ * - ANALYZE (Steps 8-9): Performance & Analysis, Reports & Logs
  */
 
 import { SimulationState, prng } from './state.js';
@@ -32,7 +26,7 @@ export class AppCoordinator {
       this.orchestrator.trackingEngine
     );
 
-    this.activeView = 'home';
+    this.activeView = 'virtual-env';
     this.charts = {};
     this.zoomLevel = 1.0;
     this.autoTrackEnabled = true;
@@ -42,9 +36,10 @@ export class AppCoordinator {
 
   init() {
     this.setupNavigation();
+    this.setupFullscreenControls();
     this.setupClock();
     this.setupCanvases();
-    this.setupHomeDashboard();
+    this.setupPsRequirementsModal();
     this.setupVirtualEnvWorkspace();
     this.setupTargetsWorkspace();
     this.setupCameraGimbalWorkspace();
@@ -56,55 +51,188 @@ export class AppCoordinator {
     this.setupReportsWorkspace();
     this.bindStateUpdates();
 
-    // Initial render
+    // Initial render & state validation
     this.orchestrator.reset();
+    this.validateConfiguration();
+
+    // Dispatch onViewChanged for all continuous sections on page load
+    [
+      'virtual-env',
+      'targets',
+      'camera',
+      'disturbances',
+      'detection',
+      'sim-control',
+      'live-tracking',
+      'performance',
+      'reports'
+    ].forEach((v) => this.onViewChanged(v));
   }
 
   /* --------------------------------------------------------------------------
-     Navigation Across 10 Workspaces
+     1. Unified Navigation & Guided Step Routing (Collapsible Sidebar)
      -------------------------------------------------------------------------- */
   setupNavigation() {
     const navItems = document.querySelectorAll('.nav-item');
-    const viewSections = document.querySelectorAll('.view-section');
+    const sidebar = document.getElementById('sidebar');
+    const appContainer = document.getElementById('app-container');
+    const btnSidebarToggle = document.getElementById('btn-sidebar-toggle');
 
+    const setSidebarExpanded = (expanded) => {
+      if (expanded) {
+        sidebar?.classList.add('expanded');
+        sidebar?.classList.remove('collapsed');
+        appContainer?.classList.add('sidebar-expanded');
+      } else {
+        sidebar?.classList.remove('expanded');
+        sidebar?.classList.add('collapsed');
+        appContainer?.classList.remove('sidebar-expanded');
+      }
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+      }, 50);
+    };
+
+    if (btnSidebarToggle) {
+      btnSidebarToggle.addEventListener('click', () => {
+        const isExpanded = sidebar?.classList.contains('expanded');
+        setSidebarExpanded(!isExpanded);
+      });
+    }
+
+    const switchView = (targetView) => {
+      if (!targetView) return;
+
+      navItems.forEach((n) => {
+        if (n.getAttribute('data-view') === targetView) {
+          n.classList.add('active');
+        } else {
+          n.classList.remove('active');
+        }
+      });
+
+      const targetEl = document.getElementById(`view-${targetView}`);
+      if (targetEl) {
+        targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+
+      this.activeView = targetView;
+      this.onViewChanged(targetView);
+    };
+
+    // Sidebar navigation clicks
     navItems.forEach((item) => {
       item.addEventListener('click', (e) => {
         e.preventDefault();
         const targetView = item.getAttribute('data-view');
-        if (!targetView) return;
-
-        navItems.forEach((n) => n.classList.remove('active'));
-        item.classList.add('active');
-
-        viewSections.forEach((sec) => {
-          if (sec.id === `view-${targetView}`) {
-            sec.classList.remove('hidden');
-          } else {
-            sec.classList.add('hidden');
-          }
-        });
-
-        this.activeView = targetView;
-        this.onViewChanged(targetView);
+        switchView(targetView);
       });
+    });
+
+    // Delegate clicks for any [data-goto-view] buttons
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-goto-view]');
+      if (btn) {
+        e.preventDefault();
+        const targetView = btn.getAttribute('data-goto-view');
+        switchView(targetView);
+      }
+    });
+
+    // Start with collapsed sidebar as requested by default
+    setSidebarExpanded(false);
+  }
+
+  /* --------------------------------------------------------------------------
+     1b. Fullscreen / Maximize In-App Viewport Controls
+     -------------------------------------------------------------------------- */
+  setupFullscreenControls() {
+    const btnEnvFullscreen = document.getElementById('btn-env-fullscreen');
+    const btnEnvRestore = document.getElementById('btn-env-restore');
+    const envBox = document.getElementById('env-canvas-container');
+
+    const toggleEnvFullscreen = (enable) => {
+      if (!envBox) return;
+      if (enable) {
+        envBox.classList.add('viewport-maximized');
+        btnEnvRestore?.classList.remove('hidden');
+      } else {
+        envBox.classList.remove('viewport-maximized');
+        btnEnvRestore?.classList.add('hidden');
+      }
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+        this.orchestrator.stepPipeline(0, false);
+      }, 60);
+    };
+
+    if (btnEnvFullscreen) {
+      btnEnvFullscreen.addEventListener('click', () => {
+        const isMax = envBox?.classList.contains('viewport-maximized');
+        toggleEnvFullscreen(!isMax);
+      });
+    }
+    if (btnEnvRestore) {
+      btnEnvRestore.addEventListener('click', () => toggleEnvFullscreen(false));
+    }
+
+    const btnCamFullscreen = document.getElementById('btn-cam-fullscreen');
+    const btnCamRestore = document.getElementById('btn-cam-restore');
+    const camCard = document.getElementById('persistent-cam-card');
+
+    const toggleCamFullscreen = (enable) => {
+      if (!camCard) return;
+      if (enable) {
+        camCard.classList.add('viewport-maximized');
+        btnCamRestore?.classList.remove('hidden');
+      } else {
+        camCard.classList.remove('viewport-maximized');
+        btnCamRestore?.classList.add('hidden');
+      }
+      setTimeout(() => {
+        window.dispatchEvent(new Event('resize'));
+        this.orchestrator.stepPipeline(0, false);
+      }, 60);
+    };
+
+    if (btnCamFullscreen) {
+      btnCamFullscreen.addEventListener('click', () => {
+        const isMax = camCard?.classList.contains('viewport-maximized');
+        toggleCamFullscreen(!isMax);
+      });
+    }
+    if (btnCamRestore) {
+      btnCamRestore.addEventListener('click', () => toggleCamFullscreen(false));
+    }
+
+    // Escape key restores any maximized viewports
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        toggleEnvFullscreen(false);
+        toggleCamFullscreen(false);
+      }
     });
   }
 
   onViewChanged(viewName) {
-    if (viewName === 'home') {
-      this.orchestrator.stepPipeline(0, false);
-    } else if (viewName === 'virtual-env') {
+    if (viewName === 'virtual-env') {
       this.orchestrator.stepPipeline(0, false);
     } else if (viewName === 'targets') {
       this.renderTargetsTrajectoryPreview();
+      this.updateTargetSummaryCard();
+    } else if (viewName === 'camera') {
+      this.orchestrator.stepPipeline(0, false);
     } else if (viewName === 'disturbances') {
       this.renderDisturbanceBeforeAfter();
     } else if (viewName === 'detection') {
       this.renderDetectionDiagnostics(SimulationState.tracking);
+    } else if (viewName === 'sim-control') {
+      this.validateConfiguration();
     } else if (viewName === 'live-tracking') {
       this.orchestrator.stepPipeline(0, false);
     } else if (viewName === 'performance') {
       this.renderPerformanceCharts();
+      this.updatePerformanceComplianceDOM(SimulationState.metrics);
     } else if (viewName === 'reports') {
       this.renderLogsTable();
     }
@@ -126,34 +254,143 @@ export class AppCoordinator {
   }
 
   /* --------------------------------------------------------------------------
-     Canvas Setup & Multi-Viewport Attachment
+     2. Configuration Validation & Stepper State Engine
+     -------------------------------------------------------------------------- */
+  validateConfiguration() {
+    const env = SimulationState.environment;
+    const tgt = SimulationState.target;
+    const cam = SimulationState.camera;
+    const det = SimulationState.detection;
+    const sim = SimulationState.simulation;
+
+    const issues = [];
+    const status = {
+      step1: true,
+      step2: true,
+      step3: true,
+      step4: true,
+      step5: true,
+      step6: true,
+      step7: sim.status === 'RUNNING' ? 'running' : (sim.currentFrame > 0 ? 'completed' : 'waiting'),
+      step8: sim.currentFrame > 0 ? 'completed' : 'waiting',
+      step9: SimulationState.logs.length > 0 ? 'completed' : 'waiting'
+    };
+
+    if (!env.width || env.width < 2000 || !env.height || env.height < 2000) {
+      status.step1 = false;
+      issues.push('Virtual Environment dimensions must be ≥ 2000 × 2000 px');
+    }
+
+    if (!tgt.shape || !tgt.size || tgt.size < 5 || tgt.size > 20 || !tgt.motionType) {
+      status.step2 = false;
+      issues.push('Target beacon shape, size (5–20 px), and motion model must be configured');
+    }
+
+    if (!cam.resolutionWidth || !cam.fovH || !cam.maxPanSpeed || !cam.maxTiltSpeed) {
+      status.step3 = false;
+      issues.push('Camera sensor parameters and pan/tilt limits must be set');
+    }
+
+    if (det.thresholdOffset === undefined || det.thresholdOffset === null) {
+      status.step5 = false;
+      issues.push('Detection threshold offset must be configured');
+    }
+
+    status.step6 = issues.length === 0;
+
+    // Update Stepper Badges
+    const setStepPill = (id, isValid, readyText = '✓ CONFIGURED') => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (isValid === 'running') {
+        el.className = 'step-status-pill running';
+        el.textContent = '● RUNNING';
+      } else if (isValid === 'completed') {
+        el.className = 'step-status-pill configured';
+        el.textContent = '✓ COMPLETED';
+      } else if (isValid === 'waiting') {
+        el.className = 'step-status-pill waiting';
+        el.textContent = '○ WAITING';
+      } else if (isValid) {
+        el.className = 'step-status-pill configured';
+        el.textContent = readyText;
+      } else {
+        el.className = 'step-status-pill not-configured';
+        el.textContent = '⚠ INCOMPLETE';
+      }
+    };
+
+    setStepPill('step-pill-1', status.step1);
+    setStepPill('step-pill-2', status.step2);
+    setStepPill('step-pill-3', status.step3);
+    setStepPill('step-pill-4', status.step4);
+    setStepPill('step-pill-5', status.step5);
+    setStepPill('step-pill-6', status.step6, '○ READY');
+    setStepPill('step-pill-7', status.step7);
+    setStepPill('step-pill-8', status.step8);
+    setStepPill('step-pill-9', status.step9);
+
+    // Update Home & Sim Control Readiness Banners
+    const homeBanner = document.getElementById('home-readiness-banner');
+    const homeDetails = document.getElementById('home-readiness-details');
+    const homeMissingList = document.getElementById('home-missing-items-list');
+    const simBanner = document.getElementById('sim-readiness-banner');
+
+    if (issues.length === 0) {
+      if (homeBanner) {
+        homeBanner.className = 'readiness-banner ready';
+        homeBanner.innerHTML = '<strong>✓ ALL SUBSYSTEMS CONFIGURED:</strong> Virtual world, beacon target, camera limits, and tracking estimator are ready.';
+      }
+      if (homeDetails) homeDetails.style.display = 'none';
+      if (simBanner) {
+        simBanner.className = 'readiness-banner ready';
+        simBanner.innerHTML = '<strong>✓ READY TO RUN:</strong> All subsystems are fully configured. Press Start Closed-Loop Simulation below.';
+      }
+    } else {
+      if (homeBanner) {
+        homeBanner.className = 'readiness-banner attention';
+        homeBanner.innerHTML = `<strong>⚠ ${issues.length} ITEM${issues.length > 1 ? 'S' : ''} REQUIRE ATTENTION:</strong>`;
+      }
+      if (homeDetails) homeDetails.style.display = 'block';
+      if (homeMissingList) {
+        homeMissingList.innerHTML = issues.map(item => `<li>${item}</li>`).join('');
+      }
+      if (simBanner) {
+        simBanner.className = 'readiness-banner attention';
+        simBanner.innerHTML = `<strong>⚠ CONFIGURATION INCOMPLETE:</strong> ${issues.join('; ')}. Complete configuration before starting.`;
+      }
+    }
+
+    return issues.length === 0;
+  }
+
+  /* --------------------------------------------------------------------------
+     3. Canvas Setup & Multi-Viewport Attachment
      -------------------------------------------------------------------------- */
   setupCanvases() {
-    const homeEnvCanvas = document.getElementById('home-env-canvas');
     const studioEnvCanvas = document.getElementById('studio-env-canvas');
-    const homeCamCanvas = document.getElementById('home-cam-canvas');
+    const persistentCamCanvas = document.getElementById('persistent-cam-canvas');
     const cockpitHudCanvas = document.getElementById('cockpit-hud-canvas');
 
     const envRenderers = [];
-    if (homeEnvCanvas) envRenderers.push(new EnvironmentRenderer(homeEnvCanvas));
     if (studioEnvCanvas) envRenderers.push(new EnvironmentRenderer(studioEnvCanvas));
 
     const camRenderers = [];
-    if (homeCamCanvas) camRenderers.push(new CameraViewRenderer(homeCamCanvas));
+    if (persistentCamCanvas) camRenderers.push(new CameraViewRenderer(persistentCamCanvas));
     if (cockpitHudCanvas) camRenderers.push(new CameraViewRenderer(cockpitHudCanvas));
 
     this.orchestrator.attachRenderers(envRenderers, camRenderers);
 
-    // Sparklines on Dashboard & Performance Page
-    const posChartCanvas = document.getElementById('chart-pos-spark');
-    if (posChartCanvas) {
-      this.charts.posSpark = new TelemetryChart(posChartCanvas, {
-        title: 'Centroid Error vs Time',
+    // Live Angular Pointing Error Chart in Step 5 Feature Area
+    const detAngularErrorCanvas = document.getElementById('detection-angular-error-chart');
+    if (detAngularErrorCanvas) {
+      this.charts.detectionAngularError = new TelemetryChart(detAngularErrorCanvas, {
+        title: 'Angular Pointing Error vs Time',
         minY: 0,
-        maxY: 20,
-        unit: 'px',
+        maxY: 120,
+        unit: 'mdeg',
         lineColor: '#00d2ff',
-        refValue: 10.0
+        refValue: 62.5
       });
     }
 
@@ -183,15 +420,7 @@ export class AppCoordinator {
   }
 
   /* --------------------------------------------------------------------------
-     Workspace 1: HOME / DASHBOARD
-     -------------------------------------------------------------------------- */
-  setupHomeDashboard() {
-    // Zero detailed configuration inputs on dashboard.
-    // Dashboard passively receives live telemetry from bindStateUpdates.
-  }
-
-  /* --------------------------------------------------------------------------
-     Workspace 2: VIRTUAL ENVIRONMENT STUDIO
+     5. Workspace: VIRTUAL ENVIRONMENT STUDIO
      -------------------------------------------------------------------------- */
   setupVirtualEnvWorkspace() {
     const inpWidth = document.getElementById('env-width');
@@ -213,6 +442,7 @@ export class AppCoordinator {
         if (valBounds) valBounds.textContent = `[0..${SimulationState.environment.width}, 0..${SimulationState.environment.height}]`;
 
         this.orchestrator.stepPipeline(0, false);
+        this.validateConfiguration();
         this.addEventLog('SUCCESS', 'Virtual Environment dimensions & starfield updated');
       });
     }
@@ -230,6 +460,7 @@ export class AppCoordinator {
         SimulationState.environment.starDensity = 200;
         SimulationState.environment.backgroundStars = [];
         this.orchestrator.stepPipeline(0, false);
+        this.validateConfiguration();
         this.addEventLog('INFO', 'Virtual Environment reset to nominal 2000 × 2000 px');
       });
     }
@@ -305,26 +536,43 @@ export class AppCoordinator {
   }
 
   /* --------------------------------------------------------------------------
-     Workspace 3: TARGETS (GENERATOR & TRAJECTORY DESIGNER)
+     6. Workspace 3: TARGETS (STEP 2)
      -------------------------------------------------------------------------- */
   setupTargetsWorkspace() {
-    const selShape = document.getElementById('tgt-shape');
+    const selShape = document.getElementById('tgt-shape-select') || document.getElementById('tgt-shape');
     const sliderSize = document.getElementById('tgt-size-slider');
     const lblSize = document.getElementById('tgt-size-val');
-    const selMotion = document.getElementById('tgt-motion-algo');
-    const inpSpeed = document.getElementById('tgt-speed');
-    const inpRadius = document.getElementById('tgt-radius');
+    const selMotion = document.getElementById('tgt-motion-select') || document.getElementById('tgt-motion-algo');
+    const inpSpeed = document.getElementById('tgt-speed-input') || document.getElementById('tgt-speed');
+    const inpIntensity = document.getElementById('tgt-intensity-input');
+
+    const presetBtns = document.querySelectorAll('.btn-tgt-preset');
+    presetBtns.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        presetBtns.forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        const pKey = btn.getAttribute('data-tgt-preset');
+        this.applyTargetPreset(pKey);
+        this.renderTargetsTrajectoryPreview();
+        this.updateTargetsTableDOM();
+        this.orchestrator.stepPipeline(0, false);
+      });
+    });
 
     if (sliderSize && lblSize) {
       sliderSize.addEventListener('input', (e) => {
         lblSize.textContent = e.target.value;
         SimulationState.target.size = parseInt(e.target.value, 10);
+        this.updateTargetsTableDOM();
+        this.orchestrator.stepPipeline(0, false);
       });
     }
 
     if (selShape) {
       selShape.addEventListener('change', (e) => {
         SimulationState.target.shape = e.target.value;
+        this.updateTargetsTableDOM();
+        this.orchestrator.stepPipeline(0, false);
       });
     }
 
@@ -332,44 +580,67 @@ export class AppCoordinator {
       selMotion.addEventListener('change', (e) => {
         SimulationState.target.motionType = e.target.value;
         this.renderTargetsTrajectoryPreview();
+        this.updateTargetsTableDOM();
+        this.orchestrator.stepPipeline(0, false);
         this.addEventLog('INFO', `Target motion changed to: ${e.target.value}`);
       });
     }
 
-    const btnApply = document.getElementById('btn-apply-targets');
+    const btnApply = document.getElementById('btn-apply-target') || document.getElementById('btn-apply-targets');
     if (btnApply) {
       btnApply.addEventListener('click', () => {
         if (inpSpeed) SimulationState.target.speed = parseInt(inpSpeed.value, 10);
-        if (inpRadius) SimulationState.target.radius = parseInt(inpRadius.value, 10);
+        if (inpIntensity) SimulationState.target.intensity = parseInt(inpIntensity.value, 10);
+        if (selShape) SimulationState.target.shape = selShape.value;
+        if (sliderSize) SimulationState.target.size = parseInt(sliderSize.value, 10);
+        if (selMotion) SimulationState.target.motionType = selMotion.value;
         this.renderTargetsTrajectoryPreview();
         this.updateTargetsTableDOM();
+        this.validateConfiguration();
         this.addEventLog('SUCCESS', 'Target configuration and motion parameters applied');
-      });
-    }
-
-    const btnReset = document.getElementById('btn-reset-targets');
-    if (btnReset) {
-      btnReset.addEventListener('click', () => {
-        SimulationState.target.shape = 'Square';
-        SimulationState.target.size = 10;
-        SimulationState.target.motionType = 'figure8';
-        SimulationState.target.speed = 120;
-        SimulationState.target.radius = 450;
-        if (selShape) selShape.value = 'Square';
-        if (sliderSize) sliderSize.value = 10;
-        if (lblSize) lblSize.textContent = '10';
-        if (selMotion) selMotion.value = 'figure8';
-        if (inpSpeed) inpSpeed.value = 120;
-        if (inpRadius) inpRadius.value = 450;
-        this.renderTargetsTrajectoryPreview();
-        this.updateTargetsTableDOM();
-        this.addEventLog('INFO', 'Target parameters restored to nominal defaults');
       });
     }
   }
 
+  applyTargetPreset(key) {
+    const t = SimulationState.target;
+    t.id = key;
+    const selShape = document.getElementById('tgt-shape-select');
+    const sliderSize = document.getElementById('tgt-size-slider');
+    const lblSize = document.getElementById('tgt-size-val');
+    const selMotion = document.getElementById('tgt-motion-select');
+    const inpSpeed = document.getElementById('tgt-speed-input');
+
+    if (key === 'T1') {
+      t.shape = 'Circle'; t.size = 10; t.motionType = 'circular'; t.speed = 60;
+    } else if (key === 'T2') {
+      t.shape = 'Rectangle'; t.size = 14; t.motionType = 'linear'; t.speed = 40;
+    } else if (key === 'T3') {
+      t.shape = 'Cross'; t.size = 16; t.motionType = 'zigzag'; t.speed = 120;
+    } else if (key === 'T4') {
+      t.shape = 'Circle'; t.size = 8; t.motionType = 'spiral'; t.speed = 80;
+    } else if (key === 'T5') {
+      t.shape = 'Point'; t.size = 5; t.motionType = 'random'; t.speed = 100;
+    }
+
+    if (selShape) selShape.value = t.shape;
+    if (sliderSize) sliderSize.value = t.size;
+    if (lblSize) lblSize.textContent = t.size;
+    if (selMotion) selMotion.value = t.motionType;
+    if (inpSpeed) inpSpeed.value = t.speed;
+
+    const idEl = document.getElementById('tbl-tgt-id');
+    if (idEl) idEl.textContent = key;
+
+    this.addEventLog('INFO', `Applied target preset: ${key} (${t.shape}, ${t.motionType})`);
+  }
+
+  updateTargetSummaryCard() {
+    this.updateTargetsTableDOM();
+  }
+
   renderTargetsTrajectoryPreview() {
-    const canvas = document.getElementById('designer-traj-canvas');
+    const canvas = document.getElementById('tgt-preview-canvas') || document.getElementById('designer-traj-canvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     const w = canvas.width;
@@ -423,28 +694,28 @@ export class AppCoordinator {
       ctx.fill();
 
       // Bounding box
-      ctx.strokeStyle = '#ff1744';
+      ctx.strokeStyle = '#00e676';
       ctx.strokeRect(lx - 8, ly - 8, 16, 16);
-      ctx.fillStyle = '#ff1744';
+      ctx.fillStyle = '#00e676';
       ctx.font = '9px "JetBrains Mono", monospace';
-      ctx.fillText('T1', lx + 10, ly - 5);
+      ctx.fillText(SimulationState.target.id || 'T1', lx + 10, ly - 5);
     }
   }
 
   updateTargetsTableDOM() {
+    const tId = document.getElementById('tbl-tgt-id');
     const tShape = document.getElementById('tbl-tgt-shape');
-    const tSize = document.getElementById('tbl-tgt-size');
     const tPos = document.getElementById('tbl-tgt-pos');
     const tMotion = document.getElementById('tbl-tgt-motion');
 
-    if (tShape) tShape.textContent = SimulationState.target.shape;
-    if (tSize) tSize.textContent = `${SimulationState.target.size} px`;
+    if (tId) tId.textContent = SimulationState.target.id || 'T1';
+    if (tShape) tShape.textContent = `${SimulationState.target.shape} (${SimulationState.target.size} px)`;
     if (tPos) tPos.textContent = `(${SimulationState.target.worldX.toFixed(1)}, ${SimulationState.target.worldY.toFixed(1)})`;
     if (tMotion) tMotion.textContent = SimulationState.target.motionType;
   }
 
   /* --------------------------------------------------------------------------
-     Workspace 4: CAMERA & PAN-TILT GIMBAL WORKBENCH
+     7. Workspace 4: CAMERA & PAN-TILT GIMBAL (STEP 3)
      -------------------------------------------------------------------------- */
   setupCameraGimbalWorkspace() {
     const stepPan = () => parseFloat(document.getElementById('inp-pan-step')?.value || 0.5);
@@ -509,10 +780,46 @@ export class AppCoordinator {
       btnAutoTrack.style.background = this.autoTrackEnabled ? '#00c853' : '#455a64';
       this.addEventLog('SUCCESS', `Auto-track mode: ${this.autoTrackEnabled ? 'ACTIVATED' : 'DISENGAGED'}`);
     });
+
+    const btnApplyCam = document.getElementById('btn-apply-cam');
+    if (btnApplyCam) {
+      btnApplyCam.addEventListener('click', () => {
+        const panSpd = document.getElementById('cam-pan-speed');
+        const tiltSpd = document.getElementById('cam-tilt-speed');
+        const ctrlRate = document.getElementById('cam-ctrl-rate');
+        if (panSpd) SimulationState.camera.maxPanSpeed = parseFloat(panSpd.value);
+        if (tiltSpd) SimulationState.camera.maxTiltSpeed = parseFloat(tiltSpd.value);
+        if (ctrlRate) {
+          const rate = parseInt(ctrlRate.value, 10);
+          SimulationState.camera.controlUpdateInterval = Math.round(1000 / rate);
+        }
+        this.validateConfiguration();
+        this.addEventLog('SUCCESS', 'Gimbal limits and control rates applied');
+      });
+    }
+
+    // Kinematic Axis Diagram Mock Sliders
+    const inpDiagPan = document.getElementById('inp-gimbal-diagram-pan');
+    const valDiagPan = document.getElementById('val-gimbal-diagram-pan');
+    if (inpDiagPan && valDiagPan) {
+      inpDiagPan.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        valDiagPan.textContent = (val >= 0 ? '+' : '') + val.toFixed(2) + '°';
+      });
+    }
+
+    const inpDiagTilt = document.getElementById('inp-gimbal-diagram-tilt');
+    const valDiagTilt = document.getElementById('val-gimbal-diagram-tilt');
+    if (inpDiagTilt && valDiagTilt) {
+      inpDiagTilt.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        valDiagTilt.textContent = (val >= 0 ? '+' : '') + val.toFixed(2) + '°';
+      });
+    }
   }
 
   /* --------------------------------------------------------------------------
-     Workspace 5: DISTURBANCES & NOISE INJECTION LAB
+     8. Workspace 5: DISTURBANCES & NOISE LAB (STEP 4)
      -------------------------------------------------------------------------- */
   setupDisturbancesWorkspace() {
     const presetPills = document.querySelectorAll('.btn-dist-pill');
@@ -523,25 +830,39 @@ export class AppCoordinator {
         const mode = pill.getAttribute('data-preset');
         this.applyDisturbancePreset(mode);
         this.renderDisturbanceBeforeAfter();
+        this.orchestrator.stepPipeline(0, false);
       });
     });
 
     this.bindSliderWithLabel('inp-noise-gauss', 'lbl-gauss-val', (val) => {
-      SimulationState.disturbances.gaussianStdDev = parseFloat(val);
+      const v = parseFloat(val);
+      SimulationState.disturbances.gaussianStdDev = v;
+      SimulationState.disturbances.gaussianEnabled = v > 0;
       this.renderDisturbanceBeforeAfter();
+      this.orchestrator.stepPipeline(0, false);
     });
     this.bindSliderWithLabel('inp-noise-sp', 'lbl-sp-val', (val) => {
-      SimulationState.disturbances.saltPepperDensity = parseFloat(val);
+      const v = parseFloat(val);
+      SimulationState.disturbances.saltPepperDensity = v;
+      SimulationState.disturbances.saltPepperEnabled = v > 0;
       this.renderDisturbanceBeforeAfter();
+      this.orchestrator.stepPipeline(0, false);
     });
     this.bindSliderWithLabel('inp-platform-mag', 'lbl-platform-val', (val) => {
       SimulationState.disturbances.platformMotionMagnitude = parseFloat(val);
+      this.orchestrator.stepPipeline(0, false);
     });
     this.bindSliderWithLabel('inp-jitter', 'lbl-jitter-val', (val) => {
-      SimulationState.disturbances.cameraJitterMagnitude = parseFloat(val);
+      const v = parseFloat(val);
+      SimulationState.disturbances.cameraJitterMagnitude = v;
+      SimulationState.disturbances.cameraJitterEnabled = v > 0;
+      this.orchestrator.stepPipeline(0, false);
     });
-    this.bindSliderWithLabel('inp-scintillation', 'lbl-scint-val', () => {
+    this.bindSliderWithLabel('inp-scintillation', 'lbl-scint-val', (val) => {
+      const v = parseFloat(val);
+      SimulationState.disturbances.contrastReduction = (v / 100) * 0.5;
       this.renderDisturbanceBeforeAfter();
+      this.orchestrator.stepPipeline(0, false);
     });
   }
 
@@ -558,54 +879,84 @@ export class AppCoordinator {
 
     if (name === 'Clear') {
       d.contrastReduction = 0.0;
-      d.gaussianStdDev = 5;
-      d.saltPepperDensity = 5;
-      d.platformMotionMagnitude = 5;
-      d.cameraJitterMagnitude = 2;
-      setSlider('inp-noise-gauss', 'lbl-gauss-val', 5);
-      setSlider('inp-noise-sp', 'lbl-sp-val', 5);
-      setSlider('inp-platform-mag', 'lbl-platform-val', 5);
-      setSlider('inp-jitter', 'lbl-jitter-val', 2);
+      d.brightnessReduction = 0.0;
+      d.gaussianStdDev = 0;
+      d.gaussianEnabled = false;
+      d.saltPepperDensity = 0;
+      d.saltPepperEnabled = false;
+      d.platformMotionMagnitude = 0;
+      d.cameraJitterMagnitude = 0;
+      d.cameraJitterEnabled = false;
+      d.poissonEnabled = false;
+      setSlider('inp-noise-gauss', 'lbl-gauss-val', 0);
+      setSlider('inp-noise-sp', 'lbl-sp-val', 0);
+      setSlider('inp-scintillation', 'lbl-scint-val', 0);
+      setSlider('inp-platform-mag', 'lbl-platform-val', 0);
+      setSlider('inp-jitter', 'lbl-jitter-val', 0);
     } else if (name === 'Haze') {
       d.contrastReduction = 0.2;
-      d.gaussianStdDev = 10;
-      d.saltPepperDensity = 8;
-      d.platformMotionMagnitude = 10;
-      d.cameraJitterMagnitude = 4;
-      setSlider('inp-noise-gauss', 'lbl-gauss-val', 10);
-      setSlider('inp-noise-sp', 'lbl-sp-val', 8);
-      setSlider('inp-platform-mag', 'lbl-platform-val', 10);
-      setSlider('inp-jitter', 'lbl-jitter-val', 4);
+      d.brightnessReduction = 0.0;
+      d.gaussianStdDev = 6;
+      d.gaussianEnabled = true;
+      d.saltPepperDensity = 4;
+      d.saltPepperEnabled = true;
+      d.platformMotionMagnitude = 6;
+      d.cameraJitterMagnitude = 3;
+      d.cameraJitterEnabled = true;
+      d.poissonEnabled = true;
+      setSlider('inp-noise-gauss', 'lbl-gauss-val', 6);
+      setSlider('inp-noise-sp', 'lbl-sp-val', 4);
+      setSlider('inp-scintillation', 'lbl-scint-val', 20);
+      setSlider('inp-platform-mag', 'lbl-platform-val', 6);
+      setSlider('inp-jitter', 'lbl-jitter-val', 3);
     } else if (name === 'Fog') {
       d.contrastReduction = 0.45;
-      d.gaussianStdDev = 16;
-      d.saltPepperDensity = 12;
-      d.platformMotionMagnitude = 15;
-      d.cameraJitterMagnitude = 6;
-      setSlider('inp-noise-gauss', 'lbl-gauss-val', 16);
-      setSlider('inp-noise-sp', 'lbl-sp-val', 12);
-      setSlider('inp-platform-mag', 'lbl-platform-val', 15);
-      setSlider('inp-jitter', 'lbl-jitter-val', 6);
+      d.brightnessReduction = 0.1;
+      d.gaussianStdDev = 14;
+      d.gaussianEnabled = true;
+      d.saltPepperDensity = 8;
+      d.saltPepperEnabled = true;
+      d.platformMotionMagnitude = 12;
+      d.cameraJitterMagnitude = 5;
+      d.cameraJitterEnabled = true;
+      d.poissonEnabled = true;
+      setSlider('inp-noise-gauss', 'lbl-gauss-val', 14);
+      setSlider('inp-noise-sp', 'lbl-sp-val', 8);
+      setSlider('inp-scintillation', 'lbl-scint-val', 45);
+      setSlider('inp-platform-mag', 'lbl-platform-val', 12);
+      setSlider('inp-jitter', 'lbl-jitter-val', 5);
     } else if (name === 'Rain') {
       d.contrastReduction = 0.35;
-      d.gaussianStdDev = 14;
-      d.saltPepperDensity = 14;
-      d.platformMotionMagnitude = 18;
-      d.cameraJitterMagnitude = 8;
-      setSlider('inp-noise-gauss', 'lbl-gauss-val', 14);
-      setSlider('inp-noise-sp', 'lbl-sp-val', 14);
-      setSlider('inp-platform-mag', 'lbl-platform-val', 18);
-      setSlider('inp-jitter', 'lbl-jitter-val', 8);
+      d.brightnessReduction = 0.15;
+      d.gaussianStdDev = 12;
+      d.gaussianEnabled = true;
+      d.saltPepperDensity = 12;
+      d.saltPepperEnabled = true;
+      d.platformMotionMagnitude = 15;
+      d.cameraJitterMagnitude = 7;
+      d.cameraJitterEnabled = true;
+      d.poissonEnabled = true;
+      setSlider('inp-noise-gauss', 'lbl-gauss-val', 12);
+      setSlider('inp-noise-sp', 'lbl-sp-val', 12);
+      setSlider('inp-scintillation', 'lbl-scint-val', 35);
+      setSlider('inp-platform-mag', 'lbl-platform-val', 15);
+      setSlider('inp-jitter', 'lbl-jitter-val', 7);
     } else if (name === 'Low Light') {
       d.contrastReduction = 0.6;
-      d.gaussianStdDev = 18;
-      d.saltPepperDensity = 10;
-      d.platformMotionMagnitude = 8;
-      d.cameraJitterMagnitude = 3;
-      setSlider('inp-noise-gauss', 'lbl-gauss-val', 18);
-      setSlider('inp-noise-sp', 'lbl-sp-val', 10);
-      setSlider('inp-platform-mag', 'lbl-platform-val', 8);
-      setSlider('inp-jitter', 'lbl-jitter-val', 3);
+      d.brightnessReduction = 0.4;
+      d.gaussianStdDev = 16;
+      d.gaussianEnabled = true;
+      d.saltPepperDensity = 6;
+      d.saltPepperEnabled = true;
+      d.platformMotionMagnitude = 6;
+      d.cameraJitterMagnitude = 2;
+      d.cameraJitterEnabled = true;
+      d.poissonEnabled = true;
+      setSlider('inp-noise-gauss', 'lbl-gauss-val', 16);
+      setSlider('inp-noise-sp', 'lbl-sp-val', 6);
+      setSlider('inp-scintillation', 'lbl-scint-val', 60);
+      setSlider('inp-platform-mag', 'lbl-platform-val', 6);
+      setSlider('inp-jitter', 'lbl-jitter-val', 2);
     }
 
     this.addEventLog('INFO', `Disturbance condition set to: ${name}`);
@@ -621,51 +972,68 @@ export class AppCoordinator {
     const w = cleanCanvas.width;
     const h = cleanCanvas.height;
 
-    // 1. Clean Frame (Pure black + sharp beacon core)
-    cCtx.fillStyle = '#040810';
+    // 1. Clean Frame (Pure dark sensor background + sharp beacon core)
+    cCtx.fillStyle = '#030712';
     cCtx.fillRect(0, 0, w, h);
-    // Beacon at center
     cCtx.fillStyle = '#ffffff';
     cCtx.beginPath();
     cCtx.arc(w / 2, h / 2, 8, 0, Math.PI * 2);
     cCtx.fill();
 
     // 2. Degraded Frame
-    dCtx.fillStyle = '#081220';
+    dCtx.fillStyle = '#030712';
     dCtx.fillRect(0, 0, w, h);
 
-    // Apply Gaussian / S&P noise simulation onto canvas
+    const dist = SimulationState.disturbances;
+    const sp = dist.saltPepperEnabled ? (dist.saltPepperDensity / 100) : 0;
+    const gauss = dist.gaussianEnabled ? dist.gaussianStdDev : 0;
+    const isDegraded = sp > 0 || gauss > 0 || dist.contrastReduction > 0 || dist.atmosphericCondition !== 'Clear';
+
+    if (!isDegraded) {
+      // 100% clean matching frame
+      dCtx.fillStyle = '#ffffff';
+      dCtx.beginPath();
+      dCtx.arc(w / 2, h / 2, 8, 0, Math.PI * 2);
+      dCtx.fill();
+      return;
+    }
+
+    // Corrupted beacon spot with atmospheric spread
+    const spreadGrad = dCtx.createRadialGradient(
+      w / 2 + (Math.random() - 0.5) * (gauss * 0.3),
+      h / 2 + (Math.random() - 0.5) * (gauss * 0.3),
+      2,
+      w / 2,
+      h / 2,
+      Math.max(10, 14 + gauss)
+    );
+    spreadGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+    spreadGrad.addColorStop(0.4, 'rgba(180, 200, 240, 0.45)');
+    spreadGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    dCtx.fillStyle = spreadGrad;
+    dCtx.beginPath();
+    dCtx.arc(w / 2, h / 2, Math.max(10, 14 + gauss), 0, Math.PI * 2);
+    dCtx.fill();
+
     const imgData = dCtx.getImageData(0, 0, w, h);
     const data = imgData.data;
-    const sp = SimulationState.disturbances.saltPepperDensity / 100;
-    const gauss = SimulationState.disturbances.gaussianStdDev;
 
     for (let i = 0; i < data.length; i += 4) {
-      if (Math.random() < sp * 0.2) {
+      if (sp > 0 && Math.random() < sp * 0.3) {
         const val = Math.random() < 0.5 ? 0 : 255;
         data[i] = val; data[i + 1] = val; data[i + 2] = val;
-      } else {
-        const noise = (Math.random() - 0.5) * gauss * 5;
+      } else if (gauss > 0) {
+        const noise = (Math.random() - 0.5) * gauss * 3.5;
         data[i] = Math.max(0, Math.min(255, data[i] + noise));
         data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + noise));
         data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + noise));
       }
     }
     dCtx.putImageData(imgData, 0, 0);
-
-    // Corrupted beacon spot with atmospheric spread
-    const spreadGrad = dCtx.createRadialGradient(w / 2 + (Math.random() - 0.5) * 6, h / 2 + (Math.random() - 0.5) * 6, 2, w / 2, h / 2, 22);
-    spreadGrad.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
-    spreadGrad.addColorStop(0.4, 'rgba(180, 200, 240, 0.4)');
-    spreadGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-    dCtx.fillStyle = spreadGrad;
-    dCtx.beginPath();
-    dCtx.arc(w / 2, h / 2, 22, 0, Math.PI * 2);
-    dCtx.fill();
   }
 
   /* --------------------------------------------------------------------------
-     Workspace 6: DETECTION & TRACKING DIAGNOSTICS LAB
+     9. Workspace 6: DETECTION & TRACKING (STEP 5)
      -------------------------------------------------------------------------- */
   setupDetectionWorkspace() {
     const selDet = document.getElementById('det-active-method');
@@ -676,12 +1044,19 @@ export class AppCoordinator {
       });
     }
 
-    const selTrk = document.getElementById('trk-active-model');
-    if (selTrk) {
-      selTrk.addEventListener('change', (e) => {
-        this.addEventLog('INFO', `Tracking estimator switched to: ${e.target.value}`);
-      });
-    }
+    this.bindSliderWithLabel('det-thresh-slider', 'det-thresh-val', (val) => {
+      SimulationState.detection.thresholdOffset = parseInt(val, 10);
+      this.orchestrator.stepPipeline(0, false);
+    });
+
+    const inpMinArea = document.getElementById('det-min-area');
+    const inpMaxArea = document.getElementById('det-max-area');
+    if (inpMinArea) inpMinArea.addEventListener('change', (e) => {
+      SimulationState.detection.minBlobArea = parseInt(e.target.value, 10);
+    });
+    if (inpMaxArea) inpMaxArea.addEventListener('change', (e) => {
+      SimulationState.detection.maxBlobArea = parseInt(e.target.value, 10);
+    });
   }
 
   renderDetectionDiagnostics(trk) {
@@ -700,31 +1075,31 @@ export class AppCoordinator {
     // Search Region Box (white dashed)
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
     ctx.setLineDash([4, 4]);
-    ctx.strokeRect(tx - 45, ty - 35, 90, 70);
+    ctx.strokeRect(tx - 35, ty - 25, 70, 50);
     ctx.setLineDash([]);
 
     // Detected Target Box (Green)
     ctx.strokeStyle = '#00e676';
     ctx.lineWidth = 1.6;
-    ctx.strokeRect(tx - 15, ty - 15, 30, 30);
+    ctx.strokeRect(tx - 12, ty - 12, 24, 24);
 
     // False candidates (Red)
     ctx.strokeStyle = '#ff1744';
-    ctx.strokeRect((tx + 75) % w, (ty + 25) % h, 14, 14);
-    ctx.strokeRect((tx - 65 + w) % w, (ty - 40 + h) % h, 12, 12);
+    ctx.strokeRect((tx + 60) % w, (ty + 20) % h, 10, 10);
+    ctx.strokeRect((tx - 50 + w) % w, (ty - 30 + h) % h, 10, 10);
 
     // Central beacon glow
     ctx.fillStyle = '#ffffff';
     ctx.beginPath();
-    ctx.arc(tx, ty, 4, 0, Math.PI * 2);
+    ctx.arc(tx, ty, 3, 0, Math.PI * 2);
     ctx.fill();
 
     // Centroid reticle
     ctx.strokeStyle = '#00d2ff';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.moveTo(tx - 6, ty); ctx.lineTo(tx + 6, ty);
-    ctx.moveTo(tx, ty - 6); ctx.lineTo(tx, ty + 6);
+    ctx.moveTo(tx - 5, ty); ctx.lineTo(tx + 5, ty);
+    ctx.moveTo(tx, ty - 5); ctx.lineTo(tx, ty + 5);
     ctx.stroke();
 
     // Update state machine stepper
@@ -736,7 +1111,7 @@ export class AppCoordinator {
   }
 
   /* --------------------------------------------------------------------------
-     Workspace 7: SIMULATION CONTROL ROOM
+     10. Workspace 7: SIMULATION CONTROL ROOM (STEP 6)
      -------------------------------------------------------------------------- */
   setupSimulationControlWorkspace() {
     const btnStart = document.getElementById('ctrl-btn-start');
@@ -745,34 +1120,54 @@ export class AppCoordinator {
     const btnStep = document.getElementById('ctrl-btn-step');
     const btnReset = document.getElementById('ctrl-btn-reset');
 
-    if (btnStart) btnStart.addEventListener('click', () => {
+    const pBtnStart = document.getElementById('persistent-btn-start');
+    const pBtnPause = document.getElementById('persistent-btn-pause');
+    const pBtnStep = document.getElementById('persistent-btn-step');
+    const pBtnReset = document.getElementById('persistent-btn-reset');
+
+    const handleStart = () => {
       this.orchestrator.start();
       this.updateSimulationStatusUI('RUNNING');
-      this.addEventLog('INFO', 'Simulation started via Control Room');
-    });
+      this.validateConfiguration();
+      this.addEventLog('INFO', 'Simulation started');
+    };
 
-    if (btnPause) btnPause.addEventListener('click', () => {
+    const handlePause = () => {
       this.orchestrator.pause();
       this.updateSimulationStatusUI('PAUSED');
-      this.addEventLog('WARN', 'Simulation paused via Control Room');
-    });
+      this.validateConfiguration();
+      this.addEventLog('WARN', 'Simulation paused');
+    };
 
-    if (btnStop) btnStop.addEventListener('click', () => {
+    const handleStop = () => {
       this.orchestrator.stop();
       this.updateSimulationStatusUI('STOPPED');
-      this.addEventLog('WARN', 'Simulation stopped via Control Room');
-    });
+      this.validateConfiguration();
+      this.addEventLog('WARN', 'Simulation stopped');
+    };
 
-    if (btnStep) btnStep.addEventListener('click', () => {
+    const handleStep = () => {
       this.orchestrator.stepFrame();
       this.addEventLog('INFO', 'Stepped single frame (0.033s)');
-    });
+    };
 
-    if (btnReset) btnReset.addEventListener('click', () => {
+    const handleReset = () => {
       this.orchestrator.reset();
       this.updateSimulationStatusUI('IDLE');
-      this.addEventLog('INFO', 'Simulation reset via Control Room');
-    });
+      this.validateConfiguration();
+      this.updatePerformanceComplianceDOM(SimulationState.metrics);
+      this.addEventLog('INFO', 'Simulation reset');
+    };
+
+    if (btnStart) btnStart.addEventListener('click', handleStart);
+    if (pBtnStart) pBtnStart.addEventListener('click', handleStart);
+    if (btnPause) btnPause.addEventListener('click', handlePause);
+    if (pBtnPause) pBtnPause.addEventListener('click', handlePause);
+    if (btnStop) btnStop.addEventListener('click', handleStop);
+    if (btnStep) btnStep.addEventListener('click', handleStep);
+    if (pBtnStep) pBtnStep.addEventListener('click', handleStep);
+    if (btnReset) btnReset.addEventListener('click', handleReset);
+    if (pBtnReset) pBtnReset.addEventListener('click', handleReset);
 
     const selScenario = document.getElementById('ctrl-scenario-select');
     const btnLoadScenario = document.getElementById('btn-ctrl-load-scenario');
@@ -788,6 +1183,7 @@ export class AppCoordinator {
           if (descScenario) {
             descScenario.innerHTML = `<strong>${presets[key].name}:</strong> Duration: ${presets[key].duration}s | Jitter: ±${presets[key].jitter} px | Speed: ${presets[key].speed} px/s`;
           }
+          this.validateConfiguration();
           this.addEventLog('SUCCESS', `Loaded scenario: ${presets[key].name}`);
         }
       });
@@ -812,7 +1208,7 @@ export class AppCoordinator {
   }
 
   /* --------------------------------------------------------------------------
-     Workspace 8: LIVE TRACKING COCKPIT & CLOSED-LOOP FLOW
+     11. Workspace 8: LIVE TRACKING COCKPIT (STEP 7)
      -------------------------------------------------------------------------- */
   setupLiveTrackingWorkspace() {
     const b2FileInput = document.getElementById('b2-video-file');
@@ -852,7 +1248,7 @@ export class AppCoordinator {
             ctx.fillStyle = '#060a12';
             ctx.fillRect(0, 0, b2Canvas.width, b2Canvas.height);
             const bx = 100 + (frameCount / total) * (b2Canvas.width - 200);
-            const by = b2Canvas.height / 2 + Math.sin(frameCount * 0.2) * 50;
+            const by = b2Canvas.height / 2 + Math.sin(frameCount * 0.2) * 40;
             ctx.fillStyle = '#ffffff';
             ctx.beginPath();
             ctx.arc(bx, by, 7, 0, Math.PI * 2);
@@ -877,14 +1273,76 @@ export class AppCoordinator {
   }
 
   /* --------------------------------------------------------------------------
-     Workspace 9: PERFORMANCE ANALYTICS & BENCHMARKING
+     12. Workspace 9: PERFORMANCE & ANALYSIS (STEP 8)
      -------------------------------------------------------------------------- */
   setupPerformanceWorkspace() {
-    // Analytics are continuously synchronized from metricsEngine in updateTelemetryDOM
+    // Initial sync
+    this.updatePerformanceComplianceDOM(SimulationState.metrics);
+  }
+
+  updatePerformanceComplianceDOM(met) {
+    const isRunningOrDone = SimulationState.simulation.currentFrame > 0;
+
+    // 1. Metric Group Cards
+    const pcAcq = document.getElementById('pcard-val-acq');
+    const pcReacq = document.getElementById('pcard-val-reacq');
+    const pcLoss = document.getElementById('pcard-val-loss');
+    const pcAvg = document.getElementById('pcard-val-avg');
+    const pcMax = document.getElementById('pcard-val-max');
+    const pcRmse = document.getElementById('pcard-val-rmse');
+    const pcFps = document.getElementById('pcard-val-fps');
+    const pcLock = document.getElementById('pcard-val-lock');
+
+    if (pcAcq) pcAcq.textContent = isRunningOrDone && met.acquisitionTime !== null ? `${met.acquisitionTime} s` : '—';
+    if (pcReacq) pcReacq.textContent = isRunningOrDone && met.reacquisitionTime !== null ? `${met.reacquisitionTime} s` : '—';
+    if (pcLoss) pcLoss.textContent = isRunningOrDone && met.targetLossRate !== null ? `${met.targetLossRate} %` : '—';
+    if (pcAvg) pcAvg.textContent = isRunningOrDone && met.averageCentroidError !== null ? `${met.averageCentroidError} px` : '—';
+    if (pcMax) pcMax.textContent = isRunningOrDone && met.maximumCentroidError !== null ? `${met.maximumCentroidError} px` : '—';
+    if (pcRmse) pcRmse.textContent = isRunningOrDone && met.rmseCentroidError !== null ? `${met.rmseCentroidError} px` : '—';
+    if (pcFps) pcFps.textContent = isRunningOrDone && met.processingFPS !== null ? `${met.processingFPS} FPS` : '—';
+    if (pcLock) pcLock.textContent = isRunningOrDone && met.lockRetentionRate !== null ? `${met.lockRetentionRate} %` : '—';
+
+    // 2. Compliance Matrix Table
+    const updateMetricRow = (valId, statusId, key, val, unit) => {
+      const elVal = document.getElementById(valId);
+      const elStatus = document.getElementById(statusId);
+      if (!elVal || !elStatus) return;
+
+      if (!isRunningOrDone || val === null || val === undefined) {
+        elVal.textContent = '—';
+        elStatus.innerHTML = '<span class="badge-na">NOT AVAILABLE</span>';
+      } else {
+        elVal.textContent = `${val} ${unit}`;
+        const ref = MetricsEngine.checkReference(key, val);
+        if (ref.isCompliant) {
+          elStatus.innerHTML = '<span class="badge-pass">PASS (Within Limit)</span>';
+        } else {
+          elStatus.innerHTML = '<span class="badge-fail">FAIL (Exceeds Limit)</span>';
+        }
+      }
+    };
+
+    updateMetricRow('perf-val-acq', 'perf-status-acq', 'acquisitionTime', met.acquisitionTime, 's');
+    updateMetricRow('perf-val-err', 'perf-status-err', 'trackingError', met.averageCentroidError, 'px');
+    updateMetricRow('perf-val-loss', 'perf-status-loss', 'targetLossRate', met.targetLossRate, '%');
+    updateMetricRow('perf-val-reacq', 'perf-status-reacq', 'reacquisitionTime', met.reacquisitionTime, 's');
+    updateMetricRow('perf-val-fps', 'perf-status-fps', 'processingFPS', met.processingFPS, 'FPS');
+
+    const elRmse = document.getElementById('perf-val-rmse');
+    const elRmseStatus = document.getElementById('perf-status-rmse');
+    if (elRmse && elRmseStatus) {
+      if (!isRunningOrDone || met.rmseCentroidError === null) {
+        elRmse.textContent = '—';
+        elRmseStatus.innerHTML = '<span class="badge-na">NOT AVAILABLE</span>';
+      } else {
+        elRmse.textContent = `${met.rmseCentroidError} px`;
+        elRmseStatus.innerHTML = '<span class="badge-pass">NOMINAL</span>';
+      }
+    }
   }
 
   /* --------------------------------------------------------------------------
-     Workspace 10: REPORTS & TELEMETRY LOG CENTER
+     13. Workspace 10: REPORTS & LOGS (STEP 9)
      -------------------------------------------------------------------------- */
   setupReportsWorkspace() {
     const btnCsv = document.getElementById('btn-export-csv');
@@ -942,7 +1400,163 @@ export class AppCoordinator {
   }
 
   /* --------------------------------------------------------------------------
-     State Synchronization & Reactive Telemetry
+     13b. Universal PS Requirements Modal Popover Controller
+     -------------------------------------------------------------------------- */
+  setupPsRequirementsModal() {
+    const modal = document.getElementById('ps-requirements-modal');
+    const modalTitle = document.getElementById('ps-modal-title');
+    const modalBody = document.getElementById('ps-modal-body');
+    const btnClose = document.getElementById('btn-close-ps-modal');
+    const btnAck = document.getElementById('btn-ps-modal-ack');
+
+    const psContent = {
+      'environment': {
+        title: 'PS-26169 · Virtual Space Environment Requirements',
+        body: `
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <div style="background:rgba(0,210,255,0.08); border-left:3px solid var(--color-cyan); padding:8px 12px; border-radius:3px;">
+              <strong style="color:var(--color-cyan);">Primary Specification:</strong>
+              <p style="margin-top:4px;">Minimum 2000 × 2000 px 2D coordinate system representing deep space operational arena.</p>
+            </div>
+            <ul style="padding-left:18px; line-height:1.7;">
+              <li><strong>Cartesian Grid:</strong> Origin (0,0) at bottom-left, (2000, 2000) at top-right.</li>
+              <li><strong>Optical Ground Terminal:</strong> Fixed transceiver terminal station at (1000, 480) with 4° × 3° FOV tracking cone.</li>
+              <li><strong>Background Noise:</strong> Dynamic starfield backdrop with configurable density (50–500 stars).</li>
+            </ul>
+          </div>
+        `
+      },
+      'targets': {
+        title: 'PS-26169 · Optical Target & Beacon Requirements',
+        body: `
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <div style="background:rgba(0,210,255,0.08); border-left:3px solid var(--color-cyan); padding:8px 12px; border-radius:3px;">
+              <strong style="color:var(--color-cyan);">Primary Specification:</strong>
+              <p style="margin-top:4px;">High-intensity optical beacon spot sized between 5 to 20 px with Gaussian intensity profile.</p>
+            </div>
+            <ul style="padding-left:18px; line-height:1.7;">
+              <li><strong>Mandatory Kinematics:</strong> Straight-Line, Circular, Figure-8, and Random Walk trajectories.</li>
+              <li><strong>Extended Kinematics:</strong> Spiral, Sinusoidal, and User-Defined parametric X(t), Y(t) paths.</li>
+              <li><strong>Target Velocity:</strong> Operational dynamic speed from 20 px/s up to 250 px/s.</li>
+            </ul>
+          </div>
+        `
+      },
+      'camera': {
+        title: 'PS-26169 · Virtual Camera & Pan-Tilt Slew Requirements',
+        body: `
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <div style="background:rgba(0,210,255,0.08); border-left:3px solid var(--color-cyan); padding:8px 12px; border-radius:3px;">
+              <strong style="color:var(--color-cyan);">Primary Specification:</strong>
+              <p style="margin-top:4px;">640 × 480 px monochrome FPA sensor with 4° × 3° FOV and ≥ 30 Hz frame rate.</p>
+            </div>
+            <ul style="padding-left:18px; line-height:1.7;">
+              <li><strong>Pan-Tilt Angular Limits:</strong> Pan range ±90.0°, Tilt range ±30.0°.</li>
+              <li><strong>Slew Velocity:</strong> 5.0 to 10.0 deg/s with 20 Hz (50 ms) closed-loop servo update rate.</li>
+              <li><strong>Tracking Control:</strong> Dual-mode (Manual D-pad slew flight & Closed-loop Auto-Tracking).</li>
+            </ul>
+          </div>
+        `
+      },
+      'disturbances': {
+        title: 'PS-26169 · Environmental Disturbances & Noise Engine',
+        body: `
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <div style="background:rgba(0,210,255,0.08); border-left:3px solid var(--color-cyan); padding:8px 12px; border-radius:3px;">
+              <strong style="color:var(--color-cyan);">Primary Specification:</strong>
+              <p style="margin-top:4px;">Simulate realistic atmospheric turbulence, sensor noise, and spacecraft base jitter.</p>
+            </div>
+            <ul style="padding-left:18px; line-height:1.7;">
+              <li><strong>Sensor Noise:</strong> Gaussian noise (σ ≤ 20 px) and Salt & Pepper noise (density ≤ 20%).</li>
+              <li><strong>Mechanical Jitter:</strong> High-frequency platform vibration up to ±20 px/frame.</li>
+              <li><strong>Platform Motion:</strong> Linear, Circular, and Random carrier spacecraft drift up to 20 px/frame.</li>
+              <li><strong>Atmosphere:</strong> Scintillation (Rytov index / log-normal flux) and transmission loss (Clear, Haze, Fog, Rain, Low Light).</li>
+            </ul>
+          </div>
+        `
+      },
+      'detection': {
+        title: 'PS-26169 · Detection & State Estimation Requirements',
+        body: `
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <div style="background:rgba(0,210,255,0.08); border-left:3px solid var(--color-cyan); padding:8px 12px; border-radius:3px;">
+              <strong style="color:var(--color-cyan);">Primary Specification:</strong>
+              <p style="margin-top:4px;">Sub-pixel Intensity-Weighted Center of Gravity (IW-CoG) with Kalman filter state propagation.</p>
+            </div>
+            <ul style="padding-left:18px; line-height:1.7;">
+              <li><strong>Autonomous State Machine:</strong> SEARCHING → DETECTED → ACQUIRING → LOCKED → LOST → RE-ACQUIRING.</li>
+              <li><strong>Estimator:</strong> Discrete-time Constant-Velocity Kalman Filter rejecting Gaussian sensor noise.</li>
+              <li><strong>AI Slot:</strong> Pluggable deep learning detection module interface.</li>
+            </ul>
+          </div>
+        `
+      },
+      'sim-control': {
+        title: 'PS-26169 · Simulation Control & Benchmark Execution',
+        body: `
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <div style="background:rgba(0,210,255,0.08); border-left:3px solid var(--color-cyan); padding:8px 12px; border-radius:3px;">
+              <strong style="color:var(--color-cyan);">Primary Specification:</strong>
+              <p style="margin-top:4px;">Closed-loop validation across standard operational benchmark scenarios.</p>
+            </div>
+            <ul style="padding-left:18px; line-height:1.7;">
+              <li><strong>Benchmark-1:</strong> Real-time synthetic space simulation with active gimbal actuation and metrics logging.</li>
+              <li><strong>Benchmark-2:</strong> Standard MP4 video stream processing testing pure CV centroiding without gimbal movement.</li>
+            </ul>
+          </div>
+        `
+      },
+      'performance': {
+        title: 'PS-26169 · Official Acceptance Criteria & Compliance Matrix',
+        body: `
+          <div style="display:flex; flex-direction:column; gap:10px;">
+            <div style="background:rgba(0,230,118,0.08); border-left:3px solid var(--color-green); padding:8px 12px; border-radius:3px;">
+              <strong style="color:var(--color-green);">Acceptance Benchmark Thresholds (PS-26169):</strong>
+            </div>
+            <table class="stat-table" style="width:100%; border-collapse:collapse;">
+              <tr style="border-bottom:1px solid var(--border-subtle);"><th style="text-align:left; padding:4px 6px;">Metric</th><th style="text-align:left; padding:4px 6px;">Threshold Limit</th><th style="text-align:left; padding:4px 6px;">Significance</th></tr>
+              <tr><td style="padding:4px 6px;"><strong>Acquisition Time</strong></td><td style="padding:4px 6px; color:var(--color-green);">≤ 2.00 s</td><td style="padding:4px 6px;">Time to achieve initial lock</td></tr>
+              <tr><td style="padding:4px 6px;"><strong>Centroid Error</strong></td><td style="padding:4px 6px; color:var(--color-green);">≤ 10.0 px (≤ 62.5 mdeg)</td><td style="padding:4px 6px;">Coarse alignment tolerance</td></tr>
+              <tr><td style="padding:4px 6px;"><strong>Target Loss Rate</strong></td><td style="padding:4px 6px; color:var(--color-green);">&lt; 5.0 %</td><td style="padding:4px 6px;">Reliability during maneuvers</td></tr>
+              <tr><td style="padding:4px 6px;"><strong>Re-acquisition Time</strong></td><td style="padding:4px 6px; color:var(--color-green);">≤ 1.00 s</td><td style="padding:4px 6px;">Recovery after temporary outage</td></tr>
+              <tr><td style="padding:4px 6px;"><strong>Processing FPS</strong></td><td style="padding:4px 6px; color:var(--color-green);">≥ 20.0 FPS</td><td style="padding:4px 6px;">Real-time processing throughput</td></tr>
+              <tr><td style="padding:4px 6px;"><strong>Camera Rate</strong></td><td style="padding:4px 6px; color:var(--color-green);">≥ 30.0 Hz</td><td style="padding:4px 6px;">Focal plane array update rate</td></tr>
+            </table>
+          </div>
+        `
+      }
+    };
+
+    const openModal = (sec) => {
+      const data = psContent[sec] || psContent['performance'];
+      if (modalTitle) modalTitle.textContent = data.title;
+      if (modalBody) modalBody.innerHTML = data.body;
+      if (modal) modal.classList.remove('hidden');
+    };
+
+    const closeModal = () => {
+      if (modal) modal.classList.add('hidden');
+    };
+
+    document.querySelectorAll('.btn-ps-modal-trigger').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const sec = btn.getAttribute('data-ps-section');
+        openModal(sec);
+      });
+    });
+
+    if (btnClose) btnClose.addEventListener('click', closeModal);
+    if (btnAck) btnAck.addEventListener('click', closeModal);
+    if (modal) {
+      modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeModal();
+      });
+    }
+  }
+
+  /* --------------------------------------------------------------------------
+     14. State Synchronization & Reactive Telemetry
      -------------------------------------------------------------------------- */
   bindStateUpdates() {
     SimulationState.subscribe((state) => {
@@ -961,23 +1575,31 @@ export class AppCoordinator {
     const bannerText = document.getElementById('sim-banner-text');
     const lamp = document.getElementById('sim-status-lamp');
 
-    const setStatus = (cls, txt, bannerTxt) => {
+    const pBadge = document.getElementById('persistent-status-badge');
+    const pCtrl = document.getElementById('persistent-ctrl-status');
+
+    const setStatus = (cls, txt, bannerTxt, pClass, pTxt) => {
       if (badge) badge.className = `status-badge ${cls}`;
       if (text) text.textContent = txt;
       if (bannerText) bannerText.textContent = bannerTxt;
       if (lamp) lamp.className = `status-indicator-lamp ${cls}`;
+      if (pBadge) {
+        pBadge.className = `persistent-status-pill ${pClass}`;
+        pBadge.textContent = pTxt;
+      }
+      if (pCtrl) pCtrl.textContent = pTxt;
     };
 
     if (status === 'RUNNING') {
-      setStatus('active', 'Simulation Active', 'STATUS: RUNNING');
+      setStatus('active', 'Simulation Active', 'STATUS: RUNNING', 'running', 'RUNNING');
     } else if (status === 'PAUSED') {
-      setStatus('active', 'Simulation Paused', 'STATUS: PAUSED');
+      setStatus('active', 'Simulation Paused', 'STATUS: PAUSED', 'paused', 'PAUSED');
       if (badge) badge.style.color = '#ffab00';
     } else if (status === 'STOPPED') {
-      setStatus('', 'Simulation Stopped', 'STATUS: STOPPED');
+      setStatus('', 'Simulation Stopped', 'STATUS: STOPPED', 'stopped', 'STOPPED');
       if (badge) badge.style.color = '#ff3d00';
     } else {
-      setStatus('active', 'System Ready', 'STATUS: READY');
+      setStatus('active', 'System Ready', 'STATUS: READY', 'ready', 'READY');
     }
   }
 
@@ -987,68 +1609,72 @@ export class AppCoordinator {
     const trk = state.tracking;
     const cam = state.camera;
 
-    // 1. Top Global Telemetry Strip
-    const elSimTime = document.getElementById('kpi-top-sim-time');
-    const elTopFrame = document.getElementById('kpi-top-frame');
-    if (elSimTime) {
-      const s = Math.floor(sim.elapsedTime);
-      const m = Math.floor(s / 60);
-      const h = Math.floor(m / 60);
-      const sec = s % 60;
-      elSimTime.textContent = `${String(h).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+    // 0. Persistent Right Panel Telemetry
+    const pTgtLabel = document.getElementById('persistent-tgt-label');
+    const pValState = document.getElementById('persistent-val-state');
+    const pValConf = document.getElementById('persistent-val-conf');
+    const pValCentroid = document.getElementById('persistent-val-centroid');
+    const pSidePointErr = document.getElementById('persistent-side-point-err');
+    const pSideAngErr = document.getElementById('persistent-side-ang-err');
+    const pValPan = document.getElementById('persistent-val-pan');
+    const pValTilt = document.getElementById('persistent-val-tilt');
+    const pValFov = document.getElementById('persistent-val-fov');
+    const pValFps = document.getElementById('persistent-val-fps');
+    const pFpsBadge = document.getElementById('persistent-fps-badge');
+
+    const pErrVal = met.instantaneousPointingError !== null ? met.instantaneousPointingError : (sim.status === 'RUNNING' ? 0.0 : null);
+    const angErrMdeg = met.instantaneousAngularPointingErrorMdeg !== null ? met.instantaneousAngularPointingErrorMdeg : (sim.status === 'RUNNING' ? 0.0 : null);
+
+    if (pTgtLabel) pTgtLabel.textContent = `${state.target.id} ${state.target.shape || 'Beacon'}`;
+    if (pValState) {
+      const st = trk.state || (sim.status === 'RUNNING' ? 'SEARCH' : 'READY');
+      pValState.textContent = st;
+      pValState.className = `cell-val status-text ${st.toLowerCase()}`;
     }
-    if (elTopFrame) elTopFrame.textContent = `Frame: ${String(sim.currentFrame).padStart(5, '0')}`;
-
-    const elFov = document.getElementById('kpi-top-fov');
-    if (elFov) elFov.textContent = `${cam.fovH.toFixed(1)}° × ${cam.fovV.toFixed(1)}°`;
-
-    const elCamPos = document.getElementById('kpi-top-cam-pos');
-    if (elCamPos) {
-      elCamPos.textContent = `Pan: ${cam.pan >= 0 ? '+' : ''}${cam.pan.toFixed(2)}° Tilt: ${cam.tilt >= 0 ? '+' : ''}${cam.tilt.toFixed(2)}°`;
+    if (pValConf) {
+      pValConf.textContent = trk.confidence !== null ? trk.confidence.toFixed(2) : (sim.status === 'RUNNING' ? '0.00' : '—');
+    }
+    if (pValCentroid) {
+      pValCentroid.textContent = trk.detectedX !== null && trk.detectedY !== null
+        ? `(${trk.detectedX.toFixed(1)}, ${trk.detectedY.toFixed(1)})`
+        : (sim.status === 'RUNNING' ? 'Searching' : '(320.0, 240.0)');
+    }
+    if (pSidePointErr) {
+      pSidePointErr.textContent = pErrVal !== null ? `${pErrVal.toFixed(1)} px` : '0.0 px';
+    }
+    if (pSideAngErr) {
+      pSideAngErr.textContent = angErrMdeg !== null ? `${angErrMdeg.toFixed(1)} mdeg` : '0.0 mdeg';
+      pSideAngErr.style.color = angErrMdeg !== null && angErrMdeg <= 62.5 ? 'var(--color-green)' : (angErrMdeg > 62.5 ? 'var(--color-amber)' : 'var(--text-primary)');
+    }
+    if (pValPan) pValPan.textContent = `${cam.pan >= 0 ? '+' : ''}${cam.pan.toFixed(2)}°`;
+    if (pValTilt) pValTilt.textContent = `${cam.tilt >= 0 ? '+' : ''}${cam.tilt.toFixed(2)}°`;
+    if (pValFov) pValFov.textContent = `${cam.fovH.toFixed(1)}°×${cam.fovV.toFixed(1)}°`;
+    if (pValFps) {
+      pValFps.textContent = sim.status === 'RUNNING' && met.processingFPS !== null
+        ? `${met.processingFPS} FPS`
+        : '—';
+    }
+    if (pFpsBadge) {
+      pFpsBadge.textContent = sim.status === 'RUNNING' && met.processingFPS !== null
+        ? `${met.processingFPS} FPS`
+        : '30 Hz FPA';
     }
 
-    const elTarget = document.getElementById('kpi-top-target');
-    if (elTarget) elTarget.textContent = `${state.target.id} – ${state.target.type || 'Beacon'}`;
+    // 1. Step 5 Feature Area Metrics (Live Angular Pointing Error Section)
+    const detPointErr = document.getElementById('det-point-error-val');
+    const detAngErr = document.getElementById('det-ang-error-val');
+    const detAvgErr = document.getElementById('det-avg-error-val');
+    const detRmseErr = document.getElementById('det-rmse-error-val');
 
-    const elTrackingStatus = document.getElementById('kpi-top-tracking-status');
-    const elConf = document.getElementById('kpi-top-conf');
-    if (elTrackingStatus) {
-      const isTracking = trk.state === 'LOCKED' || trk.state === 'ACQUIRING' || trk.state === 'TRACK';
-      elTrackingStatus.textContent = isTracking ? 'Tracking' : (trk.state === 'LOST' ? 'Lost' : 'Searching');
-      elTrackingStatus.style.color = isTracking ? 'var(--color-green)' : (trk.state === 'LOST' ? 'var(--color-red)' : 'var(--color-amber)');
+    if (detPointErr) detPointErr.textContent = pErrVal !== null ? `${pErrVal.toFixed(1)} px` : '0.0 px';
+    if (detAngErr) {
+      detAngErr.textContent = angErrMdeg !== null ? `${angErrMdeg.toFixed(1)} mdeg` : '0.0 mdeg';
+      detAngErr.style.color = angErrMdeg !== null && angErrMdeg <= 62.5 ? 'var(--color-green)' : (angErrMdeg > 62.5 ? 'var(--color-amber)' : 'var(--text-primary)');
     }
-    if (elConf) elConf.textContent = `Confidence: ${trk.confidence !== null ? trk.confidence.toFixed(2) : '0.92'}`;
+    if (detAvgErr) detAvgErr.textContent = met.averageCentroidError !== null ? `${met.averageCentroidError} px` : '—';
+    if (detRmseErr) detRmseErr.textContent = met.rmseCentroidError !== null ? `${met.rmseCentroidError} px` : '—';
 
-    const elLinkStatus = document.getElementById('kpi-top-link-status');
-    if (elLinkStatus) {
-      const isAligned = trk.state === 'LOCKED' || trk.state === 'TRACK';
-      elLinkStatus.textContent = isAligned ? 'Aligned' : 'Acquiring';
-      elLinkStatus.style.color = isAligned ? 'var(--color-cyan)' : 'var(--color-amber)';
-    }
-
-    // 2. Dashboard KPIs (View 1)
-    const dRmse = document.getElementById('kpi-dash-rmse');
-    const dConf = document.getElementById('kpi-dash-conf');
-    const dFps = document.getElementById('kpi-dash-fps');
-    const dAcq = document.getElementById('kpi-dash-acq');
-    const dLoss = document.getElementById('kpi-dash-loss');
-    const dLock = document.getElementById('kpi-dash-lock');
-    const dErrReadout = document.getElementById('dash-err-readout');
-
-    if (dRmse) dRmse.textContent = met.rmseCentroidError !== null ? `${met.rmseCentroidError} px` : '0.0 px';
-    if (dConf) dConf.textContent = trk.confidence !== null ? trk.confidence.toFixed(2) : '0.92';
-    if (dFps) dFps.textContent = met.simulationFPS !== null ? `${met.simulationFPS}` : '30.0';
-    if (dAcq) dAcq.textContent = met.acquisitionTime !== null ? `${met.acquisitionTime} s` : '1.32 s';
-    if (dLoss) dLoss.textContent = met.targetLossRate !== null ? `${met.targetLossRate} %` : '1.2 %';
-    if (dLock) dLock.textContent = met.lockRetentionRate !== null ? `${met.lockRetentionRate} %` : '98.3 %';
-    if (dErrReadout) dErrReadout.textContent = met.instantaneousCentroidError !== null ? `${met.instantaneousCentroidError} px` : '0.0 px';
-
-    // 3. Camera Bar & Gauges (View 1, 4, 8)
-    const elBarPan = document.getElementById('cam-bar-pan');
-    const elBarTilt = document.getElementById('cam-bar-tilt');
-    if (elBarPan) elBarPan.textContent = `${cam.pan >= 0 ? '+' : ''}${cam.pan.toFixed(2)}°`;
-    if (elBarTilt) elBarTilt.textContent = `${cam.tilt >= 0 ? '+' : ''}${cam.tilt.toFixed(2)}°`;
-
+    // 2. Camera Bar & Displacement Gauges
     const panGauge = document.getElementById('gauge-pan-bar');
     const tiltGauge = document.getElementById('gauge-tilt-bar');
     const panText = document.getElementById('gauge-pan-val');
@@ -1065,7 +1691,7 @@ export class AppCoordinator {
       if (tiltText) tiltText.textContent = `${cam.tilt >= 0 ? '+' : ''}${cam.tilt.toFixed(2)}°`;
     }
 
-    // Live Tracking Cockpit HUD Readouts (View 8)
+    // 3. Live Cockpit Telemetry (Step 7)
     const hudCentroid = document.getElementById('hud-centroid-val');
     const hudVector = document.getElementById('hud-vector-val');
     const hudPan = document.getElementById('hud-pan-val');
@@ -1076,7 +1702,27 @@ export class AppCoordinator {
     if (hudPan) hudPan.textContent = `${cam.pan >= 0 ? '+' : ''}${cam.pan.toFixed(2)}°`;
     if (hudTilt) hudTilt.textContent = `${cam.tilt >= 0 ? '+' : ''}${cam.tilt.toFixed(2)}°`;
 
-    // 4. Simulation Control Room Timing (View 7)
+    // 4. Live Pipeline Flowchart Status Indicators (Step 7)
+    const isDetected = trk.detectedX !== null && trk.detectedY !== null;
+    const isLocked = trk.state === 'LOCKED' || trk.state === 'TRACK';
+
+    const setPipeStep = (id, active) => {
+      const el = document.getElementById(id);
+      if (el) {
+        if (active) el.classList.add('active');
+        else el.classList.remove('active');
+      }
+    };
+
+    setPipeStep('pipe-step-sensor', sim.status === 'RUNNING' || sim.currentFrame > 0);
+    setPipeStep('pipe-step-detect', isDetected);
+    setPipeStep('pipe-step-identify', isDetected);
+    setPipeStep('pipe-step-centroid', isDetected);
+    setPipeStep('pipe-step-predict', isDetected || trk.state === 'ACQUIRING');
+    setPipeStep('pipe-step-pantilt', sim.status === 'RUNNING');
+    setPipeStep('pipe-step-recenter', isLocked);
+
+    // 5. Simulation Control Room Timing (Step 6)
     const tmClock = document.getElementById('tm-sim-clock');
     const tmFrame = document.getElementById('tm-frame-count');
     const tmLatency = document.getElementById('tm-proc-latency');
@@ -1090,55 +1736,44 @@ export class AppCoordinator {
     if (tmFrame) tmFrame.textContent = String(sim.currentFrame).padStart(5, '0');
     if (tmLatency) tmLatency.textContent = `${(1.6 + Math.random() * 0.4).toFixed(1)} ms`;
 
-    // 5. Performance Compliance Table (View 9)
-    const pAcq = document.getElementById('perf-val-acq');
-    const pErr = document.getElementById('perf-val-err');
-    const pLoss = document.getElementById('perf-val-loss');
-    const pReacq = document.getElementById('perf-val-reacq');
-    const pFps = document.getElementById('perf-val-fps');
-    const pRmse = document.getElementById('perf-val-rmse');
+    // 6. Performance Compliance Table & Cards (Step 7)
+    this.updatePerformanceComplianceDOM(met);
 
-    if (pAcq) pAcq.textContent = met.acquisitionTime !== null ? `${met.acquisitionTime} s` : '1.32 s';
-    if (pErr) pErr.textContent = met.instantaneousCentroidError !== null ? `${met.instantaneousCentroidError} px` : '3.8 px';
-    if (pLoss) pLoss.textContent = met.targetLossRate !== null ? `${met.targetLossRate} %` : '1.2 %';
-    if (pReacq) pReacq.textContent = met.reacquisitionTime !== null ? `${met.reacquisitionTime} s` : '0.58 s';
-    if (pFps) pFps.textContent = met.processingFPS !== null ? `${met.processingFPS} FPS` : '30.0 FPS';
-    if (pRmse) pRmse.textContent = met.rmseCentroidError !== null ? `${met.rmseCentroidError} px` : '3.8 px';
-
-    // 6. Targets Table (View 3)
+    // 7. Target Summary Card & Registry (Step 2)
+    this.updateTargetSummaryCard();
     this.updateTargetsTableDOM();
 
-    // 7. Active view updates
+    // 8. Active view rendering
     if (this.activeView === 'detection') {
       this.renderDetectionDiagnostics(trk);
     }
   }
 
   updateCharts(state) {
-  const hist = state.metrics.history || {};
-  const timestamps = hist.timestamps || [];
+    const hist = state.metrics.history || {};
+    const timestamps = hist.timestamps || [];
 
-  if (this.charts.posSpark) {
-    this.charts.posSpark.render(
-      hist.pointingErrors || [],
-      timestamps
-    );
-  }
+    if (this.charts.detectionAngularError) {
+      this.charts.detectionAngularError.render(
+        hist.angularPointingErrors || [],
+        timestamps
+      );
+    }
 
-  if (this.charts.perfError) {
-    this.charts.perfError.render(
-      hist.pointingErrors || [],
-      timestamps
-    );
-  }
+    if (this.charts.perfError) {
+      this.charts.perfError.render(
+        hist.pointingErrors || hist.centroidErrors || [],
+        timestamps
+      );
+    }
 
-  if (this.charts.perfFps) {
-    this.charts.perfFps.render(
-      hist.processingFPS || [],
-      timestamps
-    );
+    if (this.charts.perfFps) {
+      this.charts.perfFps.render(
+        hist.processingFPS || [],
+        timestamps
+      );
+    }
   }
-}
 
   addEventLog(level, message) {
     const tbody = document.getElementById('dash-event-log-body');
@@ -1174,9 +1809,7 @@ export class AppCoordinator {
 
     if (logs.length === 0) {
       tbody.innerHTML = `
-        <tr>
-          <td>1</td><td>0.033</td><td>(1000, 1000)</td><td>(1000, 1000)</td><td>0.0 px</td><td>0.0 px</td><td>0.00°</td><td>0.00°</td><td><span class="badge-locked">LOCKED</span></td>
-        </tr>
+        <tr><td colspan="9" style="text-align: center; color: var(--text-muted);">Awaiting simulation run to stream telemetry frames...</td></tr>
       `;
       return;
     }
