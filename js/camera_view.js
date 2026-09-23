@@ -92,18 +92,21 @@ export class CameraViewRenderer {
     const ctx = this.ctx;
     const canvas = this.canvas;
 
-    // Dynamically match internal resolution to client display size for maximum sharpness
-    if (canvas.clientWidth && canvas.clientHeight && canvas.clientWidth > 50 && canvas.clientHeight > 50) {
-      const dw = Math.round(canvas.clientWidth);
-      const dh = Math.round(canvas.clientHeight);
-      if (Math.abs(canvas.width - dw) > 4 || Math.abs(canvas.height - dh) > 4) {
-        canvas.width = dw;
-        canvas.height = dh;
-      }
+    // HiDPI backing-store resolution handling
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    const cw = Math.round(rect.width) || canvas.clientWidth || 800;
+    const ch = Math.round(rect.height) || canvas.clientHeight || 520;
+
+    const targetW = Math.round(cw * dpr);
+    const targetH = Math.round(ch * dpr);
+    if (canvas.width !== targetW || canvas.height !== targetH) {
+      canvas.width = targetW;
+      canvas.height = targetH;
     }
 
-    const cw = canvas.width;
-    const ch = canvas.height;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
     const W = 640;
     const H = 480;
 
@@ -318,7 +321,9 @@ export class CameraViewRenderer {
       if (detX < 35 || detX > 605 || detY < 30 || detY > 450) {
         ctx.fillStyle = 'rgba(255, 171, 0, 0.95)';
         ctx.font = `${Math.max(10, Math.round(11 * uiScale))}px "JetBrains Mono", monospace`;
-        ctx.fillText('⚠ APPROACHING FOV BOUNDARY', cw / 2 - Math.round(90 * uiScale), Math.round(42 * uiScale));
+        ctx.textAlign = 'center';
+        ctx.fillText('⚠ APPROACHING FOV BOUNDARY', cw / 2, Math.round(42 * uiScale));
+        ctx.textAlign = 'left';
       }
 
       ctx.restore();
@@ -328,10 +333,11 @@ export class CameraViewRenderer {
       const isRunning = SimulationState.simulation.status === 'RUNNING';
       ctx.fillStyle = isRunning ? 'rgba(255, 61, 0, 0.9)' : 'rgba(0, 210, 255, 0.7)';
       ctx.font = `${Math.max(10, Math.round(11 * uiScale))}px "JetBrains Mono", monospace`;
+      ctx.textAlign = 'center';
       const statusNotice = isRunning
         ? '⚠ BEACON ACQUISITION IN PROGRESS — SEARCHING FOV'
         : '○ OPTICAL CAMERA READY — AWAITING SIMULATION START';
-      ctx.fillText(statusNotice, Math.max(15, cw / 2 - Math.round(150 * uiScale)), ch / 2 - Math.round(20 * uiScale));
+      ctx.fillText(statusNotice, cw / 2, ch / 2 - Math.round(10 * uiScale));
       ctx.restore();
     }
 

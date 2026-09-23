@@ -55,6 +55,12 @@ export class AppCoordinator {
     this.orchestrator.reset();
     this.validateConfiguration();
 
+    // Render all diagnostic previews and charts on startup
+    this.renderTargetsTrajectoryPreview();
+    this.renderDisturbanceBeforeAfter();
+    this.renderPerformanceCharts();
+    this.updateTargetSummaryCard();
+
     // Dispatch onViewChanged for all continuous sections on page load
     [
       'virtual-env',
@@ -151,14 +157,17 @@ export class AppCoordinator {
     const btnEnvRestore = document.getElementById('btn-env-restore');
     const envBox = document.getElementById('env-canvas-container');
 
+    // Ensure hidden on initialization
+    if (btnEnvRestore) {
+      btnEnvRestore.classList.add('hidden');
+    }
+
     const toggleEnvFullscreen = (enable) => {
       if (!envBox) return;
-      if (enable) {
-        envBox.classList.add('viewport-maximized');
-        btnEnvRestore?.classList.remove('hidden');
-      } else {
-        envBox.classList.remove('viewport-maximized');
-        btnEnvRestore?.classList.add('hidden');
+      const isMax = enable !== undefined ? enable : !envBox.classList.contains('viewport-maximized');
+      envBox.classList.toggle('viewport-maximized', isMax);
+      if (btnEnvRestore) {
+        btnEnvRestore.classList.toggle('hidden', !isMax);
       }
       setTimeout(() => {
         window.dispatchEvent(new Event('resize'));
@@ -180,14 +189,17 @@ export class AppCoordinator {
     const btnCamRestore = document.getElementById('btn-cam-restore');
     const camCard = document.getElementById('persistent-cam-card');
 
+    // Ensure hidden on initialization
+    if (btnCamRestore) {
+      btnCamRestore.classList.add('hidden');
+    }
+
     const toggleCamFullscreen = (enable) => {
       if (!camCard) return;
-      if (enable) {
-        camCard.classList.add('viewport-maximized');
-        btnCamRestore?.classList.remove('hidden');
-      } else {
-        camCard.classList.remove('viewport-maximized');
-        btnCamRestore?.classList.add('hidden');
+      const isMax = enable !== undefined ? enable : !camCard.classList.contains('viewport-maximized');
+      camCard.classList.toggle('viewport-maximized', isMax);
+      if (btnCamRestore) {
+        btnCamRestore.classList.toggle('hidden', !isMax);
       }
       setTimeout(() => {
         window.dispatchEvent(new Event('resize'));
@@ -211,6 +223,14 @@ export class AppCoordinator {
         toggleEnvFullscreen(false);
         toggleCamFullscreen(false);
       }
+    });
+
+    // Window resize event handler to keep diagnostic previews and renderers updated
+    window.addEventListener('resize', () => {
+      this.renderTargetsTrajectoryPreview();
+      this.renderDisturbanceBeforeAfter();
+      this.renderPerformanceCharts();
+      this.orchestrator.stepPipeline(0, false);
     });
   }
 
@@ -394,15 +414,27 @@ export class AppCoordinator {
       });
     }
 
-    const perfErrorCanvas = document.getElementById('perf-error-chart');
-    if (perfErrorCanvas) {
-      this.charts.perfError = new TelemetryChart(perfErrorCanvas, {
-        title: 'Centroiding Tracking Error vs Time',
+    const perfAngCanvas = document.getElementById('perf-ang-chart') || document.getElementById('perf-error-chart');
+    if (perfAngCanvas) {
+      this.charts.perfAng = new TelemetryChart(perfAngCanvas, {
+        title: 'Mission-Wide Angular Pointing Error',
         minY: 0,
-        maxY: 25,
-        unit: 'px',
+        maxY: 120,
+        unit: 'mdeg',
         lineColor: '#00d2ff',
-        refValue: 10.0
+        refValue: 62.5
+      });
+    }
+
+    const perfPantiltCanvas = document.getElementById('perf-pantilt-chart');
+    if (perfPantiltCanvas) {
+      this.charts.perfPantilt = new TelemetryChart(perfPantiltCanvas, {
+        title: 'Gimbal Pan / Tilt Slew Angles',
+        minY: -45,
+        maxY: 45,
+        unit: '°',
+        lineColor: '#00e676',
+        refValue: null
       });
     }
 
@@ -427,23 +459,73 @@ export class AppCoordinator {
     const inpHeight = document.getElementById('env-height');
     const inpGrid = document.getElementById('env-grid-spacing');
     const inpStars = document.getElementById('env-star-density');
+    const valBounds = document.getElementById('val-env-bounds');
+
+    const updateEnvBoundsText = () => {
+      if (valBounds) {
+        valBounds.textContent = `[0..${SimulationState.environment.width}, 0..${SimulationState.environment.height}]`;
+      }
+    };
+
+    if (inpWidth) {
+      inpWidth.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        if (!isNaN(val) && val >= 2000) {
+          SimulationState.environment.width = val;
+          updateEnvBoundsText();
+          this.orchestrator.stepPipeline(0, false);
+          this.validateConfiguration();
+        }
+      });
+    }
+
+    if (inpHeight) {
+      inpHeight.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        if (!isNaN(val) && val >= 2000) {
+          SimulationState.environment.height = val;
+          updateEnvBoundsText();
+          this.orchestrator.stepPipeline(0, false);
+          this.validateConfiguration();
+        }
+      });
+    }
+
+    if (inpGrid) {
+      inpGrid.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        if (!isNaN(val) && val >= 50) {
+          SimulationState.environment.gridSpacing = val;
+          this.orchestrator.stepPipeline(0, false);
+        }
+      });
+    }
+
+    if (inpStars) {
+      inpStars.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        if (!isNaN(val) && val >= 10) {
+          SimulationState.environment.starDensity = val;
+          SimulationState.environment.backgroundStars = [];
+          this.orchestrator.stepPipeline(0, false);
+        }
+      });
+    }
 
     const btnApply = document.getElementById('btn-apply-env');
     if (btnApply) {
       btnApply.addEventListener('click', () => {
-        if (inpWidth) SimulationState.environment.width = Math.max(2000, parseInt(inpWidth.value, 10));
-        if (inpHeight) SimulationState.environment.height = Math.max(2000, parseInt(inpHeight.value, 10));
-        if (inpGrid) SimulationState.environment.gridSpacing = Math.max(100, parseInt(inpGrid.value, 10));
+        if (inpWidth) SimulationState.environment.width = Math.max(2000, parseInt(inpWidth.value, 10) || 2000);
+        if (inpHeight) SimulationState.environment.height = Math.max(2000, parseInt(inpHeight.value, 10) || 2000);
+        if (inpGrid) SimulationState.environment.gridSpacing = Math.max(50, parseInt(inpGrid.value, 10) || 250);
         if (inpStars) {
-          SimulationState.environment.starDensity = Math.max(50, parseInt(inpStars.value, 10));
+          SimulationState.environment.starDensity = Math.max(10, parseInt(inpStars.value, 10) || 200);
           SimulationState.environment.backgroundStars = [];
         }
-        const valBounds = document.getElementById('val-env-bounds');
-        if (valBounds) valBounds.textContent = `[0..${SimulationState.environment.width}, 0..${SimulationState.environment.height}]`;
-
+        updateEnvBoundsText();
         this.orchestrator.stepPipeline(0, false);
         this.validateConfiguration();
-        this.addEventLog('SUCCESS', 'Virtual Environment dimensions & starfield updated');
+        this.addEventLog('SUCCESS', 'Virtual Environment dimensions & starfield applied');
       });
     }
 
@@ -459,6 +541,7 @@ export class AppCoordinator {
         SimulationState.environment.gridSpacing = 250;
         SimulationState.environment.starDensity = 200;
         SimulationState.environment.backgroundStars = [];
+        updateEnvBoundsText();
         this.orchestrator.stepPipeline(0, false);
         this.validateConfiguration();
         this.addEventLog('INFO', 'Virtual Environment reset to nominal 2000 × 2000 px');
@@ -561,8 +644,9 @@ export class AppCoordinator {
 
     if (sliderSize && lblSize) {
       sliderSize.addEventListener('input', (e) => {
-        lblSize.textContent = e.target.value;
-        SimulationState.target.size = parseInt(e.target.value, 10);
+        const val = parseInt(e.target.value, 10);
+        lblSize.textContent = val;
+        SimulationState.target.size = val;
         this.updateTargetsTableDOM();
         this.orchestrator.stepPipeline(0, false);
       });
@@ -586,13 +670,36 @@ export class AppCoordinator {
       });
     }
 
+    if (inpSpeed) {
+      inpSpeed.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        if (!isNaN(val) && val >= 10) {
+          SimulationState.target.speed = val;
+          this.renderTargetsTrajectoryPreview();
+          this.updateTargetsTableDOM();
+          this.orchestrator.stepPipeline(0, false);
+        }
+      });
+    }
+
+    if (inpIntensity) {
+      inpIntensity.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        if (!isNaN(val) && val >= 0) {
+          SimulationState.target.intensity = val;
+          this.updateTargetsTableDOM();
+          this.orchestrator.stepPipeline(0, false);
+        }
+      });
+    }
+
     const btnApply = document.getElementById('btn-apply-target') || document.getElementById('btn-apply-targets');
     if (btnApply) {
       btnApply.addEventListener('click', () => {
-        if (inpSpeed) SimulationState.target.speed = parseInt(inpSpeed.value, 10);
-        if (inpIntensity) SimulationState.target.intensity = parseInt(inpIntensity.value, 10);
+        if (inpSpeed) SimulationState.target.speed = parseInt(inpSpeed.value, 10) || SimulationState.target.speed;
+        if (inpIntensity) SimulationState.target.intensity = parseInt(inpIntensity.value, 10) || SimulationState.target.intensity;
         if (selShape) SimulationState.target.shape = selShape.value;
-        if (sliderSize) SimulationState.target.size = parseInt(sliderSize.value, 10);
+        if (sliderSize) SimulationState.target.size = parseInt(sliderSize.value, 10) || SimulationState.target.size;
         if (selMotion) SimulationState.target.motionType = selMotion.value;
         this.renderTargetsTrajectoryPreview();
         this.updateTargetsTableDOM();
@@ -643,8 +750,21 @@ export class AppCoordinator {
     const canvas = document.getElementById('tgt-preview-canvas') || document.getElementById('designer-traj-canvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    const w = canvas.width;
-    const h = canvas.height;
+
+    // HiDPI backing-store resolution handling
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    const w = Math.round(rect.width) || canvas.clientWidth || 440;
+    const h = Math.round(rect.height) || canvas.clientHeight || 220;
+
+    const targetW = Math.round(w * dpr);
+    const targetH = Math.round(h * dpr);
+    if (canvas.width !== targetW || canvas.height !== targetH) {
+      canvas.width = targetW;
+      canvas.height = targetH;
+    }
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     ctx.fillStyle = '#040810';
     ctx.fillRect(0, 0, w, h);
@@ -721,6 +841,27 @@ export class AppCoordinator {
     const stepPan = () => parseFloat(document.getElementById('inp-pan-step')?.value || 0.5);
     const stepTilt = () => parseFloat(document.getElementById('inp-tilt-step')?.value || 0.5);
 
+    const valDiagPan = document.getElementById('val-gimbal-diagram-pan');
+    const valDiagTilt = document.getElementById('val-gimbal-diagram-tilt');
+    const inpDiagPan = document.getElementById('inp-gimbal-diagram-pan');
+    const inpDiagTilt = document.getElementById('inp-gimbal-diagram-tilt');
+    const gaugePan = document.getElementById('val-pan-gauge');
+    const gaugeTilt = document.getElementById('val-tilt-gauge');
+
+    const syncGimbalPanTilt = (pan, tilt, logAction = false, actionDesc = '') => {
+      SimulationState.camera.pan = Math.max(-90, Math.min(90, pan));
+      SimulationState.camera.tilt = Math.max(-30, Math.min(30, tilt));
+
+      const p = SimulationState.camera.pan;
+      const t = SimulationState.camera.tilt;
+
+      this.updateKinematicAxisDiagram(p, t);
+      this.orchestrator.stepPipeline(0, false);
+      if (logAction && actionDesc) {
+        this.addEventLog('INFO', actionDesc);
+      }
+    };
+
     const btnUp = document.getElementById('btn-cam-up');
     const btnDown = document.getElementById('btn-cam-down');
     const btnLeft = document.getElementById('btn-cam-left');
@@ -728,35 +869,115 @@ export class AppCoordinator {
     const btnCenter = document.getElementById('btn-cam-center');
 
     if (btnUp) btnUp.addEventListener('click', () => {
-      SimulationState.camera.tilt = Math.min(30, SimulationState.camera.tilt + stepTilt());
-      this.orchestrator.stepPipeline(0, false);
-      this.addEventLog('INFO', `Manual Gimbal Tilt: ${SimulationState.camera.tilt.toFixed(2)}°`);
+      syncGimbalPanTilt(SimulationState.camera.pan, SimulationState.camera.tilt + stepTilt(), true, `Manual Gimbal Tilt Up: ${(SimulationState.camera.tilt + stepTilt()).toFixed(2)}°`);
     });
 
     if (btnDown) btnDown.addEventListener('click', () => {
-      SimulationState.camera.tilt = Math.max(-30, SimulationState.camera.tilt - stepTilt());
-      this.orchestrator.stepPipeline(0, false);
-      this.addEventLog('INFO', `Manual Gimbal Tilt: ${SimulationState.camera.tilt.toFixed(2)}°`);
+      syncGimbalPanTilt(SimulationState.camera.pan, SimulationState.camera.tilt - stepTilt(), true, `Manual Gimbal Tilt Down: ${(SimulationState.camera.tilt - stepTilt()).toFixed(2)}°`);
     });
 
     if (btnLeft) btnLeft.addEventListener('click', () => {
-      SimulationState.camera.pan = Math.max(-90, SimulationState.camera.pan - stepPan());
-      this.orchestrator.stepPipeline(0, false);
-      this.addEventLog('INFO', `Manual Gimbal Pan: ${SimulationState.camera.pan.toFixed(2)}°`);
+      syncGimbalPanTilt(SimulationState.camera.pan - stepPan(), SimulationState.camera.tilt, true, `Manual Gimbal Pan Left: ${(SimulationState.camera.pan - stepPan()).toFixed(2)}°`);
     });
 
     if (btnRight) btnRight.addEventListener('click', () => {
-      SimulationState.camera.pan = Math.min(90, SimulationState.camera.pan + stepPan());
-      this.orchestrator.stepPipeline(0, false);
-      this.addEventLog('INFO', `Manual Gimbal Pan: ${SimulationState.camera.pan.toFixed(2)}°`);
+      syncGimbalPanTilt(SimulationState.camera.pan + stepPan(), SimulationState.camera.tilt, true, `Manual Gimbal Pan Right: ${(SimulationState.camera.pan + stepPan()).toFixed(2)}°`);
     });
 
     if (btnCenter) btnCenter.addEventListener('click', () => {
-      SimulationState.camera.pan = 0.0;
-      SimulationState.camera.tilt = 0.0;
-      this.orchestrator.stepPipeline(0, false);
-      this.addEventLog('INFO', 'Gimbal recentered to boresight (0.00°, 0.00°)');
+      syncGimbalPanTilt(0.0, 0.0, true, 'Gimbal recentered to boresight (0.00°, 0.00°)');
     });
+
+    // Kinematic Axis Diagram Live Interactive Sliders
+    if (inpDiagPan) {
+      inpDiagPan.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        syncGimbalPanTilt(val, SimulationState.camera.tilt);
+      });
+    }
+
+    if (inpDiagTilt) {
+      inpDiagTilt.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        syncGimbalPanTilt(SimulationState.camera.pan, val);
+      });
+    }
+
+    // Max Slew Slider
+    const inpMaxSlew = document.getElementById('inp-max-slew');
+    const lblSlewVal = document.getElementById('lbl-slew-val');
+    if (inpMaxSlew) {
+      inpMaxSlew.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        if (lblSlewVal) lblSlewVal.textContent = val.toFixed(1);
+        SimulationState.camera.maxPanSpeed = val;
+        SimulationState.camera.maxTiltSpeed = val;
+        this.validateConfiguration();
+      });
+    }
+
+    // FOV Inputs
+    const inpFovH = document.getElementById('inp-fov-h');
+    if (inpFovH) {
+      inpFovH.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        if (!isNaN(val) && val >= 1.0) {
+          SimulationState.camera.fovH = val;
+          SimulationState.camera.fovHorizontal = val;
+          this.updateKinematicAxisDiagram(SimulationState.camera.pan, SimulationState.camera.tilt);
+          this.orchestrator.stepPipeline(0, false);
+          this.validateConfiguration();
+        }
+      });
+    }
+
+    const inpFovV = document.getElementById('inp-fov-v');
+    if (inpFovV) {
+      inpFovV.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        if (!isNaN(val) && val >= 1.0) {
+          SimulationState.camera.fovV = val;
+          SimulationState.camera.fovVertical = val;
+          this.updateKinematicAxisDiagram(SimulationState.camera.pan, SimulationState.camera.tilt);
+          this.orchestrator.stepPipeline(0, false);
+          this.validateConfiguration();
+        }
+      });
+    }
+
+    // Pan/Tilt speeds & control update rate (live input + apply commit)
+    const panSpd = document.getElementById('cam-pan-speed');
+    if (panSpd) {
+      panSpd.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        if (!isNaN(val) && val > 0) {
+          SimulationState.camera.maxPanSpeed = val;
+          this.validateConfiguration();
+        }
+      });
+    }
+
+    const tiltSpd = document.getElementById('cam-tilt-speed');
+    if (tiltSpd) {
+      tiltSpd.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        if (!isNaN(val) && val > 0) {
+          SimulationState.camera.maxTiltSpeed = val;
+          this.validateConfiguration();
+        }
+      });
+    }
+
+    const ctrlRate = document.getElementById('cam-ctrl-rate');
+    if (ctrlRate) {
+      ctrlRate.addEventListener('change', (e) => {
+        const rate = parseInt(e.target.value, 10);
+        if (!isNaN(rate) && rate > 0) {
+          SimulationState.camera.controlUpdateInterval = Math.round(1000 / rate);
+          this.validateConfiguration();
+        }
+      });
+    }
 
     const btnZoomIn = document.getElementById('btn-zoom-in');
     const btnZoomOut = document.getElementById('btn-zoom-out');
@@ -784,37 +1005,96 @@ export class AppCoordinator {
     const btnApplyCam = document.getElementById('btn-apply-cam');
     if (btnApplyCam) {
       btnApplyCam.addEventListener('click', () => {
-        const panSpd = document.getElementById('cam-pan-speed');
-        const tiltSpd = document.getElementById('cam-tilt-speed');
-        const ctrlRate = document.getElementById('cam-ctrl-rate');
-        if (panSpd) SimulationState.camera.maxPanSpeed = parseFloat(panSpd.value);
-        if (tiltSpd) SimulationState.camera.maxTiltSpeed = parseFloat(tiltSpd.value);
+        if (inpMaxSlew) {
+          const val = parseFloat(inpMaxSlew.value);
+          SimulationState.camera.maxPanSpeed = val;
+          SimulationState.camera.maxTiltSpeed = val;
+        }
+        if (panSpd) SimulationState.camera.maxPanSpeed = parseFloat(panSpd.value) || SimulationState.camera.maxPanSpeed;
+        if (tiltSpd) SimulationState.camera.maxTiltSpeed = parseFloat(tiltSpd.value) || SimulationState.camera.maxTiltSpeed;
         if (ctrlRate) {
-          const rate = parseInt(ctrlRate.value, 10);
+          const rate = parseInt(ctrlRate.value, 10) || 20;
           SimulationState.camera.controlUpdateInterval = Math.round(1000 / rate);
         }
+        if (inpFovH) {
+          const v = parseFloat(inpFovH.value) || 4.0;
+          SimulationState.camera.fovH = v;
+          SimulationState.camera.fovHorizontal = v;
+        }
+        if (inpFovV) {
+          const v = parseFloat(inpFovV.value) || 3.0;
+          SimulationState.camera.fovV = v;
+          SimulationState.camera.fovVertical = v;
+        }
+        this.orchestrator.stepPipeline(0, false);
         this.validateConfiguration();
         this.addEventLog('SUCCESS', 'Gimbal limits and control rates applied');
       });
     }
 
-    // Kinematic Axis Diagram Mock Sliders
-    const inpDiagPan = document.getElementById('inp-gimbal-diagram-pan');
-    const valDiagPan = document.getElementById('val-gimbal-diagram-pan');
-    if (inpDiagPan && valDiagPan) {
-      inpDiagPan.addEventListener('input', (e) => {
-        const val = parseFloat(e.target.value);
-        valDiagPan.textContent = (val >= 0 ? '+' : '') + val.toFixed(2) + '°';
-      });
+    // Initial render of Kinematic Axis Diagram
+    this.updateKinematicAxisDiagram(SimulationState.camera.pan, SimulationState.camera.tilt);
+  }
+
+  updateKinematicAxisDiagram(pan, tilt) {
+    const p = typeof pan === 'number' ? pan : (SimulationState.camera.pan || 0);
+    const t = typeof tilt === 'number' ? tilt : (SimulationState.camera.tilt || 0);
+
+    const valPan = document.getElementById('val-gimbal-diagram-pan');
+    const valTilt = document.getElementById('val-gimbal-diagram-tilt');
+    const inpPan = document.getElementById('inp-gimbal-diagram-pan');
+    const inpTilt = document.getElementById('inp-gimbal-diagram-tilt');
+    const gaugePan = document.getElementById('val-pan-gauge');
+    const gaugeTilt = document.getElementById('val-tilt-gauge');
+
+    const strPan = (p >= 0 ? '+' : '') + p.toFixed(2) + '°';
+    const strTilt = (t >= 0 ? '+' : '') + t.toFixed(2) + '°';
+
+    if (valPan) valPan.textContent = strPan;
+    if (valTilt) valTilt.textContent = strTilt;
+    if (gaugePan) gaugePan.textContent = strPan;
+    if (gaugeTilt) gaugeTilt.textContent = strTilt;
+
+    if (inpPan && document.activeElement !== inpPan && Math.abs(parseFloat(inpPan.value) - p) > 0.05) {
+      inpPan.value = p;
+    }
+    if (inpTilt && document.activeElement !== inpTilt && Math.abs(parseFloat(inpTilt.value) - t) > 0.05) {
+      inpTilt.value = t;
     }
 
-    const inpDiagTilt = document.getElementById('inp-gimbal-diagram-tilt');
-    const valDiagTilt = document.getElementById('val-gimbal-diagram-tilt');
-    if (inpDiagTilt && valDiagTilt) {
-      inpDiagTilt.addEventListener('input', (e) => {
-        const val = parseFloat(e.target.value);
-        valDiagTilt.textContent = (val >= 0 ? '+' : '') + val.toFixed(2) + '°';
-      });
+    // Dynamic SVG motion transforms matching Image 2
+    const tiltGroup = document.getElementById('gimbal-svg-tilt-group');
+    const panGroup = document.getElementById('gimbal-svg-pan-group');
+    const fovText = document.getElementById('gimbal-svg-fov-text');
+
+    if (tiltGroup) {
+      // Rotate camera barrel, front lens, and FOV cone around tilt pivot (210, 75)
+      // and translate slightly with pan for 3D depth effect
+      const panOffset = (p / 90) * 6;
+      tiltGroup.setAttribute('transform', `rotate(${-t}, 210, 75) translate(${panOffset}, 0)`);
+    }
+
+    if (panGroup) {
+      // Shift / rotate turntable pedestal and struts with pan angle
+      const panOffset = (p / 90) * 8;
+      const panRot = (p / 90) * 5;
+      panGroup.setAttribute('transform', `translate(${panOffset}, 0) rotate(${panRot}, 210, 145)`);
+    }
+
+    const fovCone = document.getElementById('gimbal-svg-fov-cone');
+    const cam = SimulationState.camera;
+    const fh = typeof cam.fovH === 'number' ? cam.fovH : (parseFloat(cam.fovHorizontal) || 4.0);
+    const fv = typeof cam.fovV === 'number' ? cam.fovV : (parseFloat(cam.fovVertical) || 3.0);
+
+    if (fovCone) {
+      const spread = Math.max(15, Math.min(60, (fv / 3.0) * 37));
+      const yTop = (75 - spread).toFixed(1);
+      const yBot = (75 + spread).toFixed(1);
+      fovCone.setAttribute('points', `246,75 320,${yTop} 320,${yBot}`);
+    }
+
+    if (fovText) {
+      fovText.textContent = `${fh.toFixed(1)}° × ${fv.toFixed(1)}° FOV`;
     }
   }
 
@@ -969,8 +1249,27 @@ export class AppCoordinator {
 
     const cCtx = cleanCanvas.getContext('2d');
     const dCtx = degCanvas.getContext('2d');
-    const w = cleanCanvas.width;
-    const h = cleanCanvas.height;
+
+    // HiDPI backing-store resolution handling
+    const dpr = window.devicePixelRatio || 1;
+    const cRect = cleanCanvas.getBoundingClientRect();
+    const w = Math.round(cRect.width) || cleanCanvas.clientWidth || 220;
+    const h = Math.round(cRect.height) || cleanCanvas.clientHeight || 180;
+
+    const targetW = Math.round(w * dpr);
+    const targetH = Math.round(h * dpr);
+
+    if (cleanCanvas.width !== targetW || cleanCanvas.height !== targetH) {
+      cleanCanvas.width = targetW;
+      cleanCanvas.height = targetH;
+    }
+    if (degCanvas.width !== targetW || degCanvas.height !== targetH) {
+      degCanvas.width = targetW;
+      degCanvas.height = targetH;
+    }
+
+    cCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    dCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     // 1. Clean Frame (Pure dark sensor background + sharp beacon core)
     cCtx.fillStyle = '#030712';
@@ -1015,7 +1314,7 @@ export class AppCoordinator {
     dCtx.arc(w / 2, h / 2, Math.max(10, 14 + gauss), 0, Math.PI * 2);
     dCtx.fill();
 
-    const imgData = dCtx.getImageData(0, 0, w, h);
+    const imgData = dCtx.getImageData(0, 0, targetW, targetH);
     const data = imgData.data;
 
     for (let i = 0; i < data.length; i += 4) {
@@ -1036,27 +1335,95 @@ export class AppCoordinator {
      9. Workspace 6: DETECTION & TRACKING (STEP 5)
      -------------------------------------------------------------------------- */
   setupDetectionWorkspace() {
-    const selDet = document.getElementById('det-active-method');
+    const selDet = document.getElementById('det-algo-select') || document.getElementById('det-active-method');
     if (selDet) {
       selDet.addEventListener('change', (e) => {
         SimulationState.detection.activeDetector = e.target.value;
+        this.orchestrator.stepPipeline(0, false);
         this.addEventLog('INFO', `Detector architecture switched to: ${e.target.value}`);
       });
     }
 
-    this.bindSliderWithLabel('det-thresh-slider', 'det-thresh-val', (val) => {
-      SimulationState.detection.thresholdOffset = parseInt(val, 10);
-      this.orchestrator.stepPipeline(0, false);
-    });
+    const inpThresh = document.getElementById('inp-thresh-offset') || document.getElementById('det-thresh-slider');
+    if (inpThresh) {
+      inpThresh.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        if (!isNaN(val)) {
+          SimulationState.detection.thresholdOffset = val;
+          const lbl = document.getElementById('det-thresh-val');
+          if (lbl) lbl.textContent = val;
+          this.orchestrator.stepPipeline(0, false);
+        }
+      });
+    }
 
-    const inpMinArea = document.getElementById('det-min-area');
-    const inpMaxArea = document.getElementById('det-max-area');
-    if (inpMinArea) inpMinArea.addEventListener('change', (e) => {
-      SimulationState.detection.minBlobArea = parseInt(e.target.value, 10);
-    });
-    if (inpMaxArea) inpMaxArea.addEventListener('change', (e) => {
-      SimulationState.detection.maxBlobArea = parseInt(e.target.value, 10);
-    });
+    const inpMinArea = document.getElementById('inp-min-area') || document.getElementById('det-min-area');
+    if (inpMinArea) {
+      inpMinArea.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        if (!isNaN(val) && val >= 1) {
+          SimulationState.detection.minBlobArea = val;
+          this.orchestrator.stepPipeline(0, false);
+        }
+      });
+    }
+
+    const inpMaxArea = document.getElementById('inp-max-area') || document.getElementById('det-max-area');
+    if (inpMaxArea) {
+      inpMaxArea.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        if (!isNaN(val) && val >= 10) {
+          SimulationState.detection.maxBlobArea = val;
+          this.orchestrator.stepPipeline(0, false);
+        }
+      });
+    }
+
+    const inpAcq = document.getElementById('inp-acq-frames');
+    if (inpAcq) {
+      inpAcq.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        if (!isNaN(val) && val >= 1) {
+          SimulationState.tracking.acquisitionFrames = val;
+          this.orchestrator.stepPipeline(0, false);
+        }
+      });
+    }
+
+    const inpLoss = document.getElementById('inp-loss-frames');
+    if (inpLoss) {
+      inpLoss.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        if (!isNaN(val) && val >= 1) {
+          SimulationState.tracking.lossThresholdFrames = val;
+          this.orchestrator.stepPipeline(0, false);
+        }
+      });
+    }
+
+    const inpKalmanQ = document.getElementById('inp-kalman-q');
+    if (inpKalmanQ) {
+      inpKalmanQ.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        if (!isNaN(val) && val > 0) {
+          SimulationState.tracking.kalmanQ = val;
+          this.orchestrator.trackingEngine.setKalmanNoise(val, SimulationState.tracking.kalmanR);
+          this.orchestrator.stepPipeline(0, false);
+        }
+      });
+    }
+
+    const inpKalmanR = document.getElementById('inp-kalman-r');
+    if (inpKalmanR) {
+      inpKalmanR.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        if (!isNaN(val) && val > 0) {
+          SimulationState.tracking.kalmanR = val;
+          this.orchestrator.trackingEngine.setKalmanNoise(SimulationState.tracking.kalmanQ, val);
+          this.orchestrator.stepPipeline(0, false);
+        }
+      });
+    }
   }
 
   renderDetectionDiagnostics(trk) {
@@ -1114,17 +1481,6 @@ export class AppCoordinator {
      10. Workspace 7: SIMULATION CONTROL ROOM (STEP 6)
      -------------------------------------------------------------------------- */
   setupSimulationControlWorkspace() {
-    const btnStart = document.getElementById('ctrl-btn-start');
-    const btnPause = document.getElementById('ctrl-btn-pause');
-    const btnStop = document.getElementById('ctrl-btn-stop');
-    const btnStep = document.getElementById('ctrl-btn-step');
-    const btnReset = document.getElementById('ctrl-btn-reset');
-
-    const pBtnStart = document.getElementById('persistent-btn-start');
-    const pBtnPause = document.getElementById('persistent-btn-pause');
-    const pBtnStep = document.getElementById('persistent-btn-step');
-    const pBtnReset = document.getElementById('persistent-btn-reset');
-
     const handleStart = () => {
       this.orchestrator.start();
       this.updateSimulationStatusUI('RUNNING');
@@ -1159,15 +1515,82 @@ export class AppCoordinator {
       this.addEventLog('INFO', 'Simulation reset');
     };
 
-    if (btnStart) btnStart.addEventListener('click', handleStart);
-    if (pBtnStart) pBtnStart.addEventListener('click', handleStart);
-    if (btnPause) btnPause.addEventListener('click', handlePause);
-    if (pBtnPause) pBtnPause.addEventListener('click', handlePause);
+    // Primary control buttons (both workbench & persistent side panel)
+    ['btn-sim-start', 'ctrl-btn-start', 'persistent-btn-start'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('click', handleStart);
+    });
+
+    ['btn-sim-pause', 'ctrl-btn-pause', 'persistent-btn-pause'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('click', handlePause);
+    });
+
+    ['btn-sim-step', 'ctrl-btn-step', 'persistent-btn-step'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('click', handleStep);
+    });
+
+    ['btn-sim-reset', 'ctrl-btn-reset', 'persistent-btn-reset'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('click', handleReset);
+    });
+
+    const btnStop = document.getElementById('ctrl-btn-stop');
     if (btnStop) btnStop.addEventListener('click', handleStop);
-    if (btnStep) btnStep.addEventListener('click', handleStep);
-    if (pBtnStep) pBtnStep.addEventListener('click', handleStep);
-    if (btnReset) btnReset.addEventListener('click', handleReset);
-    if (pBtnReset) pBtnReset.addEventListener('click', handleReset);
+
+    // Speed selection pills
+    const speedPills = document.querySelectorAll('.btn-speed-pill');
+    speedPills.forEach(pill => {
+      pill.addEventListener('click', () => {
+        speedPills.forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        const spd = parseFloat(pill.getAttribute('data-speed')) || 1.0;
+        SimulationState.simulation.speedFactor = spd;
+        this.addEventLog('INFO', `Simulation speed factor set to ${spd}x`);
+      });
+    });
+
+    const selSpeed = document.getElementById('ctrl-speed-factor');
+    if (selSpeed) {
+      selSpeed.addEventListener('change', (e) => {
+        SimulationState.simulation.speedFactor = parseFloat(e.target.value);
+        this.addEventLog('INFO', `Execution speed factor set to: ${e.target.value}x`);
+      });
+    }
+
+    const chkAuto = document.getElementById('chk-auto-track');
+    if (chkAuto) {
+      chkAuto.addEventListener('change', (e) => {
+        this.autoTrackEnabled = e.target.checked;
+        this.addEventLog('SUCCESS', `Auto-track mode: ${this.autoTrackEnabled ? 'ACTIVATED' : 'DISENGAGED'}`);
+      });
+    }
+
+    // Benchmark-1 Scenario Buttons
+    const b1Status = document.getElementById('b1-status-banner');
+    const wireB1Button = (id, scenarioKey) => {
+      const btn = document.getElementById(id);
+      if (!btn) return;
+      btn.addEventListener('click', () => {
+        const presets = this.benchmark1Runner.getScenarioPresets();
+        if (presets[scenarioKey]) {
+          this.benchmark1Runner.applyScenarioConfig(presets[scenarioKey]);
+          this.orchestrator.reset();
+          if (b1Status) {
+            b1Status.textContent = `Running Automated Benchmark: ${presets[scenarioKey].name} (${presets[scenarioKey].duration}s)...`;
+          }
+          this.validateConfiguration();
+          handleStart();
+          this.addEventLog('SUCCESS', `Started Benchmark-1 Scenario: ${presets[scenarioKey].name}`);
+        }
+      });
+    };
+
+    wireB1Button('btn-b1-nominal', 'nominal');
+    wireB1Button('btn-b1-noise', 'high_noise');
+    wireB1Button('btn-b1-evasive', 'evasive');
+    wireB1Button('btn-b1-dropout', 'signal_dropout');
 
     const selScenario = document.getElementById('ctrl-scenario-select');
     const btnLoadScenario = document.getElementById('btn-ctrl-load-scenario');
@@ -1189,20 +1612,15 @@ export class AppCoordinator {
       });
     }
 
-    const selSpeed = document.getElementById('ctrl-speed-factor');
-    if (selSpeed) {
-      selSpeed.addEventListener('change', (e) => {
-        SimulationState.simulation.speedFactor = parseFloat(e.target.value);
-        this.addEventLog('INFO', `Execution speed factor set to: ${e.target.value}x`);
-      });
-    }
-
     const inpSeed = document.getElementById('ctrl-seed-val');
     if (inpSeed) {
-      inpSeed.addEventListener('change', (e) => {
-        SimulationState.simulation.seed = parseInt(e.target.value, 10);
-        prng.setSeed(SimulationState.simulation.seed);
-        this.addEventLog('INFO', `PRNG seed set to: ${e.target.value}`);
+      inpSeed.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        if (!isNaN(val)) {
+          SimulationState.simulation.seed = val;
+          prng.setSeed(val);
+          this.addEventLog('INFO', `PRNG seed set to: ${val}`);
+        }
       });
     }
   }
@@ -1306,39 +1724,39 @@ export class AppCoordinator {
     const updateMetricRow = (valId, statusId, key, val, unit) => {
       const elVal = document.getElementById(valId);
       const elStatus = document.getElementById(statusId);
-      if (!elVal || !elStatus) return;
+      if (!elVal && !elStatus) return;
 
       if (!isRunningOrDone || val === null || val === undefined) {
-        elVal.textContent = '—';
-        elStatus.innerHTML = '<span class="badge-na">NOT AVAILABLE</span>';
+        if (elVal) elVal.textContent = '—';
+        if (elStatus) elStatus.innerHTML = '<span class="badge-eval badge-pending">PENDING</span>';
       } else {
-        elVal.textContent = `${val} ${unit}`;
+        if (elVal) elVal.textContent = `${val} ${unit}`;
         const ref = MetricsEngine.checkReference(key, val);
-        if (ref.isCompliant) {
-          elStatus.innerHTML = '<span class="badge-pass">PASS (Within Limit)</span>';
-        } else {
-          elStatus.innerHTML = '<span class="badge-fail">FAIL (Exceeds Limit)</span>';
+        if (elStatus) {
+          if (ref.isCompliant) {
+            elStatus.innerHTML = '<span class="badge-eval badge-pass">PASS</span>';
+          } else {
+            elStatus.innerHTML = '<span class="badge-eval badge-fail">FAIL</span>';
+          }
         }
       }
     };
 
+    updateMetricRow('tbl-acq-measured', 'tbl-acq-status', 'acquisitionTime', met.acquisitionTime, 's');
     updateMetricRow('perf-val-acq', 'perf-status-acq', 'acquisitionTime', met.acquisitionTime, 's');
+
+    updateMetricRow('tbl-err-measured', 'tbl-err-status', 'trackingError', met.averageCentroidError, 'px');
     updateMetricRow('perf-val-err', 'perf-status-err', 'trackingError', met.averageCentroidError, 'px');
-    updateMetricRow('perf-val-loss', 'perf-status-loss', 'targetLossRate', met.targetLossRate, '%');
-    updateMetricRow('perf-val-reacq', 'perf-status-reacq', 'reacquisitionTime', met.reacquisitionTime, 's');
+
+    updateMetricRow('tbl-rmse-measured', 'tbl-rmse-status', 'rmseError', met.rmseCentroidError, 'px');
+    updateMetricRow('perf-val-rmse', 'perf-status-rmse', 'rmseError', met.rmseCentroidError, 'px');
+
+    updateMetricRow('tbl-fps-measured', 'tbl-fps-status', 'processingFPS', met.processingFPS, 'FPS');
     updateMetricRow('perf-val-fps', 'perf-status-fps', 'processingFPS', met.processingFPS, 'FPS');
 
-    const elRmse = document.getElementById('perf-val-rmse');
-    const elRmseStatus = document.getElementById('perf-status-rmse');
-    if (elRmse && elRmseStatus) {
-      if (!isRunningOrDone || met.rmseCentroidError === null) {
-        elRmse.textContent = '—';
-        elRmseStatus.innerHTML = '<span class="badge-na">NOT AVAILABLE</span>';
-      } else {
-        elRmse.textContent = `${met.rmseCentroidError} px`;
-        elRmseStatus.innerHTML = '<span class="badge-pass">NOMINAL</span>';
-      }
-    }
+    updateMetricRow('tbl-lock-measured', 'tbl-lock-status', 'lockRetentionRate', met.lockRetentionRate, '%');
+    updateMetricRow('perf-val-loss', 'perf-status-loss', 'targetLossRate', met.targetLossRate, '%');
+    updateMetricRow('perf-val-reacq', 'perf-status-reacq', 'reacquisitionTime', met.reacquisitionTime, 's');
   }
 
   /* --------------------------------------------------------------------------
@@ -1674,22 +2092,8 @@ export class AppCoordinator {
     if (detAvgErr) detAvgErr.textContent = met.averageCentroidError !== null ? `${met.averageCentroidError} px` : '—';
     if (detRmseErr) detRmseErr.textContent = met.rmseCentroidError !== null ? `${met.rmseCentroidError} px` : '—';
 
-    // 2. Camera Bar & Displacement Gauges
-    const panGauge = document.getElementById('gauge-pan-bar');
-    const tiltGauge = document.getElementById('gauge-tilt-bar');
-    const panText = document.getElementById('gauge-pan-val');
-    const tiltText = document.getElementById('gauge-tilt-val');
-
-    if (panGauge) {
-      const pct = Math.max(0, Math.min(100, ((cam.pan + 90) / 180) * 100));
-      panGauge.style.left = `${pct}%`;
-      if (panText) panText.textContent = `${cam.pan >= 0 ? '+' : ''}${cam.pan.toFixed(2)}°`;
-    }
-    if (tiltGauge) {
-      const pct = Math.max(0, Math.min(100, ((cam.tilt + 30) / 60) * 100));
-      tiltGauge.style.left = `${pct}%`;
-      if (tiltText) tiltText.textContent = `${cam.tilt >= 0 ? '+' : ''}${cam.tilt.toFixed(2)}°`;
-    }
+    // 2. Physical Gimbal Kinematic Axis Diagram (SVG, Sliders, and Dynamic Gauges)
+    this.updateKinematicAxisDiagram(cam.pan, cam.tilt);
 
     // 3. Live Cockpit Telemetry (Step 7)
     const hudCentroid = document.getElementById('hud-centroid-val');
@@ -1760,9 +2164,23 @@ export class AppCoordinator {
       );
     }
 
+    if (this.charts.perfAng) {
+      this.charts.perfAng.render(
+        hist.angularPointingErrors || hist.pointingErrors || [],
+        timestamps
+      );
+    }
+
     if (this.charts.perfError) {
       this.charts.perfError.render(
         hist.pointingErrors || hist.centroidErrors || [],
+        timestamps
+      );
+    }
+
+    if (this.charts.perfPantilt) {
+      this.charts.perfPantilt.render(
+        hist.panAngles || [],
         timestamps
       );
     }
@@ -1830,12 +2248,19 @@ export class AppCoordinator {
   }
 
   renderPerformanceCharts() {
-    const hist = SimulationState.metrics.history;
-    if (this.charts.perfError) {
-      this.charts.perfError.render(hist.centroidErrors, hist.timestamps);
+    const hist = SimulationState.metrics.history || {};
+    const timestamps = hist.timestamps || [];
+    if (this.charts.detectionAngularError) {
+      this.charts.detectionAngularError.render(hist.angularPointingErrors || [], timestamps);
+    }
+    if (this.charts.perfAng) {
+      this.charts.perfAng.render(hist.angularPointingErrors || hist.pointingErrors || [], timestamps);
+    }
+    if (this.charts.perfPantilt) {
+      this.charts.perfPantilt.render(hist.panAngles || [], timestamps);
     }
     if (this.charts.perfFps) {
-      this.charts.perfFps.render(hist.processingFPS, hist.timestamps);
+      this.charts.perfFps.render(hist.processingFPS || [], timestamps);
     }
   }
 

@@ -154,11 +154,6 @@
           <button class="btn btn-action btn-ps-modal-trigger" data-ps-section="environment">📋 PS REQUIREMENTS</button>
         </div>
 
-        <div class="concept-notice-banner">
-          <span>ℹ</span>
-          <span><strong>Engineering Concept:</strong> The virtual space arena provides the absolute ground-truth coordinate reference frame for optical beacon trajectory modeling and camera FOV projection.</span>
-        </div>
-
         <div class="workbench-layout-2col">
           <!-- Left: Environment Parameters -->
           <div class="card-box">
@@ -317,11 +312,6 @@
           <button class="btn btn-action btn-ps-modal-trigger" data-ps-section="camera">📋 PS REQUIREMENTS</button>
         </div>
 
-        <div class="concept-notice-banner">
-          <span>ℹ</span>
-          <span><strong>Control Mode Distinction:</strong> <em>Manual Gimbal Control:</em> User directly commands camera orientation. | <em>Auto-Track:</em> Closed-loop tracking algorithm commands pan/tilt to drive centroid error to zero.</span>
-        </div>
-
         <div class="workbench-layout-2col">
           <!-- Left: Manual Gimbal Flight & Orientation Controls -->
           <div class="card-box">
@@ -392,67 +382,92 @@
           </div>
         </div>
 
-        <!-- Task 7: Physical Gimbal Kinematic Axis Diagram Card (Frontend-only Mockup) -->
+        <!-- Physical Gimbal Kinematic Axis Diagram Card -->
         <div class="card-box" style="margin-top: 14px;">
           <div class="card-box-title">PHYSICAL GIMBAL KINEMATIC AXIS DIAGRAM</div>
-          <div style="display: flex; justify-content: center; align-items: center; padding: 14px; background: #040914; border: 1px solid var(--border-subtle); border-radius: 4px; margin-bottom: 12px;">
-            <svg width="420" height="220" viewBox="0 0 420 220" fill="none" xmlns="http://www.w3.org/2000/svg" style="max-width: 100%; height: auto;">
-              <!-- Ground / Base Mount -->
-              <rect x="140" y="195" width="140" height="15" rx="3" fill="#0c1a32" stroke="var(--border-subtle)" stroke-width="1.5"/>
-              <text x="210" y="206" fill="var(--text-secondary)" font-size="9" font-weight="700" font-family="var(--font-mono)" text-anchor="middle">GROUND MOUNT</text>
-              
-              <!-- Gimbal Base Pedestal & Pan Axis Shaft -->
-              <rect x="195" y="155" width="30" height="40" fill="#081426" stroke="var(--color-cyan)" stroke-width="1.5"/>
-              <line x1="210" y1="140" x2="210" y2="200" stroke="var(--color-cyan)" stroke-dasharray="3 3" stroke-width="1.2"/>
-              
-              <!-- Pan Axis Curved Arrow (±90°) -->
-              <path d="M 160 170 C 160 185, 260 185, 260 170" fill="none" stroke="var(--color-cyan)" stroke-width="1.8" stroke-dasharray="4 2"/>
-              <polygon points="263,165 260,173 255,168" fill="var(--color-cyan)"/>
-              <polygon points="157,165 160,173 165,168" fill="var(--color-cyan)"/>
-              <text x="210" y="188" fill="var(--color-cyan)" font-size="9.5" font-weight="700" font-family="var(--font-mono)" text-anchor="middle">PAN AXIS (±90°)</text>
-              
-              <!-- Gimbal Fork / Yoke (Tilt Axis Support) -->
-              <path d="M 165 155 L 165 95 L 185 95 L 185 140 L 235 140 L 235 95 L 255 95 L 255 155 Z" fill="#0c1e38" stroke="var(--border-subtle)" stroke-width="1.5"/>
-              
-              <!-- Tilt Axis Pivot & Curved Arrow (±30°) -->
-              <circle cx="175" cy="95" r="4" fill="var(--color-green)"/>
-              <circle cx="245" cy="95" r="4" fill="var(--color-green)"/>
-              <line x1="160" y1="95" x2="260" y2="95" stroke="var(--color-green)" stroke-dasharray="3 3" stroke-width="1.2"/>
-              <path d="M 150 75 C 140 95, 140 105, 150 115" fill="none" stroke="var(--color-green)" stroke-width="1.8" stroke-dasharray="3 2"/>
-              <polygon points="153,70 146,76 153,80" fill="var(--color-green)"/>
-              <polygon points="153,120 146,114 153,110" fill="var(--color-green)"/>
-              <text x="135" y="98" fill="var(--color-green)" font-size="9.5" font-weight="700" font-family="var(--font-mono)" text-anchor="end">TILT AXIS (±30°)</text>
-              
-              <!-- Camera Optical Housing Body -->
-              <rect x="185" y="70" width="50" height="50" rx="4" fill="#07101e" stroke="var(--color-cyan)" stroke-width="1.5"/>
-              <rect x="195" y="80" width="30" height="30" rx="2" fill="#0b172a" stroke="var(--border-subtle)" stroke-width="1"/>
-              <circle cx="210" cy="95" r="8" fill="#030712" stroke="var(--color-cyan)" stroke-width="1.5"/>
-              <circle cx="210" cy="95" r="3" fill="var(--color-green)"/>
-              
-              <!-- Optical Lens Barrel Projecting Upward -->
-              <rect x="200" y="45" width="20" height="25" rx="2" fill="#0d2038" stroke="var(--color-cyan)" stroke-width="1.2"/>
-              
-              <!-- Triangular FOV Cone (4° x 3°) -->
-              <polygon points="210,45 160,5 260,5" fill="rgba(0, 210, 255, 0.08)" stroke="var(--color-cyan)" stroke-width="1.2" stroke-dasharray="4 3"/>
-              <text x="210" y="20" fill="var(--color-cyan)" font-size="9" font-weight="700" font-family="var(--font-mono)" text-anchor="middle">4° × 3° FOV CONE</text>
+          <div class="gimbal-diagram-viewport">
+            <svg id="gimbal-kinematic-svg" width="440" height="210" viewBox="0 0 440 210" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="gimbal-barrel-grad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#3b4f6e"/>
+                  <stop offset="45%" stop-color="#243447"/>
+                  <stop offset="100%" stop-color="#0f1824"/>
+                </linearGradient>
+                <linearGradient id="gimbal-fov-grad" x1="0" y1="0" x2="1" y2="0">
+                  <stop offset="0%" stop-color="rgba(0, 210, 255, 0.4)"/>
+                  <stop offset="100%" stop-color="rgba(0, 145, 234, 0.05)"/>
+                </linearGradient>
+                <linearGradient id="gimbal-turntable-grad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#20344f"/>
+                  <stop offset="100%" stop-color="#0d1828"/>
+                </linearGradient>
+              </defs>
+
+              <!-- Fixed Ground Mount Base -->
+              <g id="gimbal-ground-mount">
+                <rect x="150" y="172" width="120" height="18" rx="4" fill="#081324" stroke="#1c3350" stroke-width="1.2"/>
+                <text x="210" y="184.5" fill="#627d9e" font-size="8.5" font-weight="700" font-family="'JetBrains Mono', monospace" text-anchor="middle">GROUND MOUNT</text>
+              </g>
+
+              <!-- Dynamic Pan Sub-Assembly (Rotates & shifts with Pan) -->
+              <g id="gimbal-svg-pan-group">
+                <!-- Turntable Pedestal -->
+                <rect x="190" y="122" width="40" height="48" rx="6" fill="url(#gimbal-turntable-grad)" stroke="#1a3556" stroke-width="1.4"/>
+                <line x1="210" y1="122" x2="210" y2="170" stroke="rgba(0, 210, 255, 0.25)" stroke-dasharray="2 2" stroke-width="1"/>
+
+                <!-- Pan Axis Dashed Amber Arc & Label -->
+                <path d="M 166 142 C 166 156, 254 156, 254 142" fill="none" stroke="#ffab00" stroke-width="1.8" stroke-dasharray="4 3"/>
+                <polygon points="257,138 255,147 248,141" fill="#ffab00"/>
+                <polygon points="163,138 165,147 172,141" fill="#ffab00"/>
+                <text x="210" y="108" fill="#ffab00" font-size="9" font-weight="700" font-family="'JetBrains Mono', monospace" text-anchor="middle">PAN AXIS (±90°)</text>
+
+                <!-- Vertical Support Struts -->
+                <rect x="178" y="78" width="4" height="44" rx="2" fill="#00d2ff" opacity="0.85"/>
+                <rect x="238" y="78" width="4" height="44" rx="2" fill="#00d2ff" opacity="0.85"/>
+              </g>
+
+              <!-- Dynamic Tilt Sub-Assembly & Camera Body (Pitches with Tilt around (210, 75)) -->
+              <g id="gimbal-svg-tilt-group">
+                <!-- Tilt Axis Dashed Green Arc & Label -->
+                <path d="M 196 46 C 206 34, 224 34, 234 46" fill="none" stroke="#00e676" stroke-width="1.8" stroke-dasharray="3 2"/>
+                <polygon points="238,47 229,45 232,52" fill="#00e676"/>
+                <text x="215" y="26" fill="#00e676" font-size="9" font-weight="700" font-family="'JetBrains Mono', monospace" text-anchor="middle">TILT AXIS (±30°)</text>
+
+                <!-- Horizontal Cylindrical Camera Body -->
+                <rect x="156" y="55" width="90" height="40" rx="6" fill="url(#gimbal-barrel-grad)" stroke="#1a3554" stroke-width="1.2"/>
+                <!-- Upper curvature reflection -->
+                <line x1="162" y1="62" x2="242" y2="62" stroke="rgba(255, 255, 255, 0.2)" stroke-width="1"/>
+
+                <!-- Front Lens Bezel (Right side) -->
+                <ellipse cx="246" cy="75" rx="7" ry="20" fill="#040914" stroke="#00d2ff" stroke-width="2"/>
+                <ellipse cx="246" cy="75" rx="4" ry="13" fill="rgba(0, 210, 255, 0.4)" stroke="#00d2ff" stroke-width="0.8"/>
+
+                <!-- Rightward Expanding FOV Cone -->
+                <polygon id="gimbal-svg-fov-cone" points="246,75 320,38 320,112" fill="url(#gimbal-fov-grad)" stroke="rgba(0, 210, 255, 0.65)" stroke-width="1.2" stroke-dasharray="4 3"/>
+                <text id="gimbal-svg-fov-text" x="282" y="78" fill="#00d2ff" font-size="8.5" font-weight="700" font-family="'JetBrains Mono', monospace" text-anchor="middle">4° × 3° FOV</text>
+
+                <!-- Tilt Axis Pivot Indicator (Green dot) -->
+                <circle cx="210" cy="75" r="3.5" fill="#00e676"/>
+              </g>
             </svg>
           </div>
 
-          <!-- Sliders with Live Readout -->
-          <div class="workbench-layout-2col">
-            <div class="form-row">
-              <label>Pan Angular Displacement:</label>
-              <div class="slider-with-readout">
-                <input type="range" class="mini-slider" id="inp-gimbal-diagram-pan" min="-90" max="90" step="0.1" value="0">
-                <span class="readout" id="val-gimbal-diagram-pan">+0.00°</span>
+          <!-- Full-Width Sliders with Live Readouts (Matching Image 2) -->
+          <div class="gimbal-sliders-container">
+            <div class="gimbal-slider-row">
+              <div class="gimbal-slider-header">
+                <span class="gimbal-slider-label">Pan Angular Displacement:</span>
+                <span class="gimbal-slider-val cyan" id="val-gimbal-diagram-pan">+0.00°</span>
               </div>
+              <input type="range" class="gimbal-range-slider pan-slider" id="inp-gimbal-diagram-pan" min="-90" max="90" step="0.1" value="0">
             </div>
-            <div class="form-row">
-              <label>Tilt Angular Displacement:</label>
-              <div class="slider-with-readout">
-                <input type="range" class="mini-slider" id="inp-gimbal-diagram-tilt" min="-30" max="30" step="0.1" value="0">
-                <span class="readout" id="val-gimbal-diagram-tilt">+0.00°</span>
+
+            <div class="gimbal-slider-row">
+              <div class="gimbal-slider-header">
+                <span class="gimbal-slider-label">Tilt Angular Displacement:</span>
+                <span class="gimbal-slider-val green" id="val-gimbal-diagram-tilt">+0.00°</span>
               </div>
+              <input type="range" class="gimbal-range-slider tilt-slider" id="inp-gimbal-diagram-tilt" min="-30" max="30" step="0.1" value="0">
             </div>
           </div>
         </div>
@@ -468,11 +483,6 @@
             <div class="workbench-desc">Inject atmospheric noise, turbulence, and platform jitter to evaluate tracking robustness.</div>
           </div>
           <button class="btn btn-action btn-ps-modal-trigger" data-ps-section="disturbances">📋 PS REQUIREMENTS</button>
-        </div>
-
-        <div class="concept-notice-banner">
-          <span>ℹ</span>
-          <span><strong>Disturbance Concept:</strong> Atmospheric and sensor disturbances degrade the optical signal observed by the camera sensor without altering the physical target trajectory.</span>
         </div>
 
         <!-- Atmospheric Preset Buttons -->
@@ -954,13 +964,17 @@
             <div class="persistent-panel-sub">Optical Camera Viewport & Real-Time Tracking</div>
           </div>
         </div>
-        <span class="persistent-status-pill ready" id="persistent-status-badge">READY</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="persistent-status-pill ready" id="persistent-status-badge">READY</span>
+          <button class="btn btn-action btn-xs" id="btn-cam-fullscreen" title="Maximize Camera Viewport">⛶ Maximize</button>
+        </div>
       </div>
 
       <!-- A. LARGE WIDE VIRTUAL CAMERA VIEWPORT -->
       <div class="persistent-cam-card" id="persistent-cam-card">
         <div class="persistent-canvas-wrapper">
           <canvas id="persistent-cam-canvas" width="800" height="520"></canvas>
+          <button class="btn-floating-restore hidden" id="btn-cam-restore" title="Restore Normal View">✕ Exit Fullscreen</button>
         </div>
       </div>
 

@@ -20,8 +20,21 @@ export class TelemetryChart {
   render(dataSeries, timeSeries) {
     const ctx = this.ctx;
     const canvas = this.canvas;
-    const w = canvas.width;
-    const h = canvas.height;
+
+    // HiDPI backing-store resolution handling
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    const w = Math.round(rect.width) || canvas.clientWidth || 360;
+    const h = Math.round(rect.height) || canvas.clientHeight || 170;
+
+    const targetW = Math.round(w * dpr);
+    const targetH = Math.round(h * dpr);
+    if (canvas.width !== targetW || canvas.height !== targetH) {
+      canvas.width = targetW;
+      canvas.height = targetH;
+    }
+
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     // Background
     ctx.fillStyle = '#060c18';

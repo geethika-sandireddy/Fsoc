@@ -77,6 +77,8 @@ export const SimulationState = {
     sensorType: 'Monochrome (FPA)',
     fovH: 4.0, // degrees
     fovV: 3.0, // degrees
+    fovHorizontal: 4.0,
+    fovVertical: 3.0,
     updateRate: 30, // Hz (>= 30 Hz)
     initialPosition: 'center',
     // Camera mount world position

@@ -183,7 +183,19 @@ export class SimulationOrchestrator {
     // 4. Generate Sensor Frame & Inject Pixel Disturbances (Measure processing time)
     const procStart = performance.now();
     let imgData = null;
-    if (this.camRenderer) {
+    if (this.camRenderers && this.camRenderers.length > 0) {
+      imgData = this.camRenderers[0].generateRawSensorFrame(
+        trk.groundTruthCamX,
+        trk.groundTruthCamY,
+        this.disturbanceEngine
+      );
+      for (let i = 1; i < this.camRenderers.length; i++) {
+        const r = this.camRenderers[i];
+        if (r && r.offCtx && this.camRenderers[0].offscreen) {
+          r.offCtx.drawImage(this.camRenderers[0].offscreen, 0, 0);
+        }
+      }
+    } else if (this.camRenderer) {
       imgData = this.camRenderer.generateRawSensorFrame(
         trk.groundTruthCamX,
         trk.groundTruthCamY,
