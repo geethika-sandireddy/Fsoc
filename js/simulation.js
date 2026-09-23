@@ -30,6 +30,7 @@ export class SimulationOrchestrator {
     this.animFrameId = null;
     this.lastTimestamp = null;
     this.isRunning = false;
+    this.wallAccumulator = 0;
   }
 
   attachRenderers(envRenderer, camRenderer) {
@@ -63,6 +64,7 @@ export class SimulationOrchestrator {
     sim.status = 'RUNNING';
     this.isRunning = true;
     this.lastTimestamp = performance.now();
+    this.wallAccumulator = 0;
     this.loop(this.lastTimestamp);
     SimulationState.notify('simulation');
   }
@@ -109,13 +111,14 @@ export class SimulationOrchestrator {
     this.metricsEngine.reset();
 
     // Render single initial static frame
-    this.stepPipeline(0.033, false);
+    this.wallAccumulator = 0;
+    this.stepPipeline(1.0 / Math.max(30, SimulationState.camera.updateRate || 30), false);
     SimulationState.notify('simulation');
   }
 
   stepFrame() {
     this.pause();
-    this.stepPipeline(0.033, true);
+    this.stepPipeline(1.0 / Math.max(30, SimulationState.camera.updateRate || 30), true);
     SimulationState.notify('simulation');
   }
 
@@ -123,13 +126,20 @@ export class SimulationOrchestrator {
     if (!this.isRunning) return;
 
     const sim = SimulationState.simulation;
-    const rawDt = Math.min(0.1, (timestamp - (this.lastTimestamp || timestamp)) / 1000.0);
+    const rawDt = Math.min(0.1, Math.max(0, (timestamp - (this.lastTimestamp || timestamp)) / 1000.0));
     this.lastTimestamp = timestamp;
+    this.wallAccumulator += rawDt;
 
+    const cameraRate = Math.max(30, SimulationState.camera.updateRate || 30);
+    const cameraInterval = 1.0 / cameraRate;
     const speed = sim.speedFactor || 1.0;
-    const effectiveDt = rawDt * speed;
+    let steps = 0;
 
-    this.stepPipeline(effectiveDt, true);
+    while (this.wallAccumulator >= cameraInterval && steps < 5) {
+      this.wallAccumulator -= cameraInterval;
+      this.stepPipeline(cameraInterval * speed, true, cameraInterval);
+      steps++;
+    }
 
     // Check duration limit
     if (sim.durationMode !== 'continuous') {
@@ -145,7 +155,7 @@ export class SimulationOrchestrator {
   /**
    * Single execution pass of the full closed-loop pipeline.
    */
-  stepPipeline(dt, advanceCounters = true) {
+  stepPipeline(dt, advanceCounters = true, wallDt = dt) {
     const sim = SimulationState.simulation;
     const tgt = SimulationState.target;
     const cam = SimulationState.camera;
@@ -229,7 +239,8 @@ export class SimulationOrchestrator {
       trk.groundTruthCamY,
       procTimeMs,
       dt,
-      sim.elapsedTime
+      sim.elapsedTime,
+      wallDt
     );
 
     // 9. Render Viewports

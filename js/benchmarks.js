@@ -185,7 +185,9 @@ export class Benchmark1Runner {
       rmseCentroidError: met.rmseCentroidError,
       lockRetentionRate: met.lockRetentionRate,
       targetLossRate: met.targetLossRate,
+      averageProcessingTimeMs: met.averageProcessingTimeMs,
       avgProcessingFPS: met.processingFPS,
+      cameraUpdateRateHz: met.cameraUpdateRateHz,
       compliance: {
         acquisition: MetricsEngine.checkReference('acquisitionTime', met.acquisitionTime),
         trackingError: MetricsEngine.checkReference('trackingError', met.averageCentroidError),
@@ -300,6 +302,9 @@ export class Benchmark2Processor {
       const det = this.detector.detect(imgData, 640, 480);
       const trk = this.trackingEngine.update(det, frameIntervalSec, currentFrame * frameIntervalSec);
       const procTimeMs = performance.now() - tStart;
+      const processingFPS = procTimeMs > 0 ? 1000.0 / procTimeMs : null;
+      SimulationState.benchmark2.currentFrame = currentFrame;
+      SimulationState.benchmark2.processingFPS = processingFPS !== null ? parseFloat(processingFPS.toFixed(1)) : null;
 
       // Comparison with reference data if available
       let refItem = this.referenceData.find(r => r.frame === currentFrame);
@@ -339,6 +344,7 @@ export class Benchmark2Processor {
       if (onFrame) {
         onFrame(currentFrame, totalFrames, logEntry, this.frameCanvas, det, trk);
       }
+      SimulationState.notify('benchmark2');
 
       currentFrame++;
       this.videoElement.currentTime = currentFrame * frameIntervalSec;

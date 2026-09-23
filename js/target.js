@@ -3,7 +3,7 @@
  * Implements 4 Mandatory + 3 Optional Motion Models with configuration boundary validation.
  */
 
-import { SimulationState, prng } from './state.js';
+import { SimulationState, prng, normalizeMotionType } from './state.js';
 
 export class TargetEngine {
   constructor() {
@@ -53,7 +53,9 @@ export class TargetEngine {
     let newX = tgt.worldX;
     let newY = tgt.worldY;
 
-    switch (tgt.motionType) {
+    const motionType = normalizeMotionType(tgt.motionType);
+
+    switch (motionType) {
       // 1. Mandatory: Straight Line
       case 'straight': {
         newX += tgt.vx * dt;
@@ -178,34 +180,36 @@ export class TargetEngine {
     const points = [];
     const totalTime = 1.0 / Math.max(0.01, tgt.frequency);
 
+    const normalizedMotion = normalizeMotionType(motionType);
+
     for (let i = 0; i <= steps; i++) {
       const t = (i / steps) * totalTime;
       let px = centerX;
       let py = centerY;
 
-      if (motionType === 'figure8') {
+      if (normalizedMotion === 'figure8') {
         const r = Math.min(tgt.radius, env.width / 2 - 150);
         px = centerX + r * Math.sin(omega * t);
         py = centerY + (r * 0.5) * Math.sin(2 * omega * t);
-      } else if (motionType === 'circular') {
+      } else if (normalizedMotion === 'circular') {
         const r = Math.min(tgt.radius, env.width / 2 - 120);
         px = centerX + r * Math.cos(omega * t);
         py = centerY + r * Math.sin(omega * t);
-      } else if (motionType === 'straight') {
+      } else if (normalizedMotion === 'straight') {
         px = 200 + (env.width - 400) * (i / steps);
         py = centerY - 150 + (300) * (i / steps);
-      } else if (motionType === 'spiral') {
+      } else if (normalizedMotion === 'spiral') {
         const currentR = 80 + (tgt.radius - 80) * (i / steps);
         px = centerX + currentR * Math.cos(omega * t * 3);
         py = centerY + currentR * Math.sin(omega * t * 3);
-      } else if (motionType === 'sinusoidal') {
+      } else if (normalizedMotion === 'sinusoidal') {
         px = 150 + (env.width - 300) * (i / steps);
         py = centerY + (tgt.radius * 0.4) * Math.sin(omega * t * 3);
-      } else if (motionType === 'random') {
+      } else if (normalizedMotion === 'random') {
         // Decorative representation of random walk
         px = centerX + Math.sin(i * 0.15) * 200 + Math.cos(i * 0.4) * 80;
         py = centerY + Math.cos(i * 0.2) * 160 + Math.sin(i * 0.3) * 60;
-      } else if (motionType === 'userDefined') {
+      } else if (normalizedMotion === 'userDefined') {
         try {
           const fnX = new Function('t', `return ${tgt.userFormulaX};`);
           const fnY = new Function('t', `return ${tgt.userFormulaY};`);

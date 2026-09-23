@@ -30,7 +30,7 @@ export class MetricsEngine {
   /**
    * Updates all metrics for the current frame.
    */
-  update(detectedX, detectedY, groundTruthCamX, groundTruthCamY, procTimeMs, frameDt, elapsedTime) {
+  update(detectedX, detectedY, groundTruthCamX, groundTruthCamY, procTimeMs, frameDt, elapsedTime, wallDt = frameDt) {
     const met = SimulationState.metrics;
     const trk = SimulationState.tracking;
     const cam = SimulationState.camera;
@@ -42,12 +42,22 @@ export class MetricsEngine {
         ? parseFloat(instantSimFPS.toFixed(1))
         : parseFloat((met.simulationFPS * 0.9 + instantSimFPS * 0.1).toFixed(1));
     }
+    if (wallDt > 0) {
+      const instantCameraHz = 1.0 / wallDt;
+      met.cameraUpdateRateHz = met.cameraUpdateRateHz === null
+        ? parseFloat(instantCameraHz.toFixed(1))
+        : parseFloat((met.cameraUpdateRateHz * 0.9 + instantCameraHz * 0.1).toFixed(1));
+    }
 
     if (procTimeMs > 0) {
       const instantProcFPS = 1000.0 / procTimeMs;
       met.processingFPS = met.processingFPS === null
         ? parseFloat(instantProcFPS.toFixed(1))
         : parseFloat((met.processingFPS * 0.9 + instantProcFPS * 0.1).toFixed(1));
+      met.lastProcessingTimeMs = parseFloat(procTimeMs.toFixed(2));
+      met.averageProcessingTimeMs = met.averageProcessingTimeMs === null
+        ? parseFloat(procTimeMs.toFixed(2))
+        : parseFloat((met.averageProcessingTimeMs * 0.9 + procTimeMs * 0.1).toFixed(2));
     }
 
     // 2. Centroiding Error & Pointing Error computation

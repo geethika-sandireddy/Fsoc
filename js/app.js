@@ -7,7 +7,7 @@
  * - ANALYZE (Steps 8-9): Performance & Analysis, Reports & Logs
  */
 
-import { SimulationState, prng } from './state.js';
+import { SimulationState, prng, normalizeMotionType, normalizeTargetShape } from './state.js';
 import { SimulationOrchestrator } from './simulation.js';
 import { EnvironmentRenderer } from './environment.js';
 import { CameraViewRenderer } from './camera_view.js';
@@ -16,6 +16,7 @@ import { Benchmark1Runner, Benchmark2Processor } from './benchmarks.js';
 import { ReportEngine } from './reports.js';
 import { STATE_METADATA } from './tracking.js';
 import { PS_REFERENCES, MetricsEngine } from './metrics.js';
+import { evaluatePSRequirements } from './validation.js';
 
 export class AppCoordinator {
   constructor() {
@@ -32,6 +33,7 @@ export class AppCoordinator {
     this.autoTrackEnabled = true;
     this.activeLogFilter = 'ALL';
     this.logSearchTerm = '';
+    this.benchmark1ProgressTimer = null;
   }
 
   init() {
@@ -382,6 +384,12 @@ export class AppCoordinator {
     }
 
     return issues.length === 0;
+  }
+
+  refreshPSValidation() {
+    const result = evaluatePSRequirements(SimulationState);
+    SimulationState.validation.latest = result.checks;
+    SimulationState.validation.summary = result.summary;
   }
 
   /* --------------------------------------------------------------------------
