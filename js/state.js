@@ -31,6 +31,38 @@ class PRNG {
 
 export const prng = new PRNG(26169);
 
+export const MOTION_TYPE_ALIASES = {
+  straight: 'straight',
+  linear: 'straight',
+  circular: 'circular',
+  figure8: 'figure8',
+  'figure-8': 'figure8',
+  zigzag: 'figure8',
+  random: 'random',
+  spiral: 'spiral',
+  sinusoidal: 'sinusoidal',
+  userdefined: 'userDefined',
+  user_defined: 'userDefined'
+};
+
+export const TARGET_SHAPE_ALIASES = {
+  square: 'Square',
+  circle: 'Circle',
+  rectangle: 'Rectangle',
+  point: 'Point Source',
+  'point source': 'Point Source'
+};
+
+export function normalizeMotionType(value) {
+  const key = String(value || '').trim().toLowerCase();
+  return MOTION_TYPE_ALIASES[key] || 'figure8';
+}
+
+export function normalizeTargetShape(value) {
+  const key = String(value || '').trim().toLowerCase();
+  return TARGET_SHAPE_ALIASES[key] || 'Square';
+}
+
 export const SimulationState = {
   // 1. Virtual Environment (>= 2000 x 2000 px)
   environment: {
@@ -173,7 +205,10 @@ export const SimulationState = {
     panAngle: null,
     tiltAngle: null,
     simulationFPS: null,
+    cameraUpdateRateHz: null,
     processingFPS: null,
+    lastProcessingTimeMs: null,
+    averageProcessingTimeMs: null,
     acquisitionTime: null,
     reacquisitionTime: null,
     totalObservableFrames: 0,
@@ -212,8 +247,20 @@ export const SimulationState = {
     duration: 0,
     totalFrames: 0,
     currentFrame: 0,
+    processingFPS: null,
     hasReferenceData: false,
     results: null
+  },
+
+  validation: {
+    latest: {},
+    summary: {
+      configured: 0,
+      measured: 0,
+      pass: 0,
+      fail: 0,
+      unavailable: 0
+    }
   },
 
   // 11. Streaming Telemetry Log for Centroid Error Log & CSV Export
@@ -246,7 +293,10 @@ export const SimulationState = {
     this.metrics.panAngle = 0.0;
     this.metrics.tiltAngle = 0.0;
     this.metrics.simulationFPS = null;
+    this.metrics.cameraUpdateRateHz = null;
     this.metrics.processingFPS = null;
+    this.metrics.lastProcessingTimeMs = null;
+    this.metrics.averageProcessingTimeMs = null;
     this.metrics.acquisitionTime = null;
     this.metrics.reacquisitionTime = null;
     this.metrics.totalObservableFrames = 0;

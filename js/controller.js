@@ -51,6 +51,10 @@ export class PanTiltController {
 
     const controlDt = this.accumulatorTime;
     this.accumulatorTime = 0; // Reset accumulator
+    const maxPanSpeed = Math.max(5.0, Math.min(10.0, cam.maxPanSpeed || 5.0));
+    const maxTiltSpeed = Math.max(5.0, Math.min(10.0, cam.maxTiltSpeed || 5.0));
+    const maxPanDelta = maxPanSpeed * controlDt;
+    const maxTiltDelta = maxTiltSpeed * controlDt;
 
     if (detectedX === null || detectedY === null) {
   // Active search pattern for acquisition / re-acquisition.
@@ -62,9 +66,6 @@ export class PanTiltController {
 
   const desiredTilt =
     30.0 * Math.sin(this.searchPhase * 0.22);
-
-  const maxPanDelta = maxPanSpeed * controlDt;
-  const maxTiltDelta = maxTiltSpeed * controlDt;
 
   const panError = desiredPan - cam.pan;
   const tiltError = desiredTilt - cam.tilt;
@@ -82,7 +83,7 @@ export class PanTiltController {
   cam.pan += appliedPanDelta;
   cam.tilt += appliedTiltDelta;
 
-  cam.pan = Math.max(-45.0, Math.min(45.0, cam.pan));
+  cam.pan = Math.max(-90.0, Math.min(90.0, cam.pan));
   cam.tilt = Math.max(-30.0, Math.min(30.0, cam.tilt));
 
   ctrl.panErrorAngle = 0.0;
@@ -114,12 +115,6 @@ export class PanTiltController {
     ctrl.tiltErrorAngle = parseFloat(tiltErrorDeg.toFixed(3));
 
     // 2. Slew-Rate Limiter Physics (Speed limit: 5-10 °/s)
-    const maxPanSpeed = Math.max(1.0, Math.min(10.0, cam.maxPanSpeed || 5.0));
-    const maxTiltSpeed = Math.max(1.0, Math.min(10.0, cam.maxTiltSpeed || 5.0));
-
-    const maxPanDelta = maxPanSpeed * controlDt;
-    const maxTiltDelta = maxTiltSpeed * controlDt;
-
     // Proportional gain (Kp = 0.75 for smooth coarse convergence without overshoot)
     const Kp = 0.8;
     const desiredPanDelta = panErrorDeg * Kp;
@@ -134,7 +129,7 @@ export class PanTiltController {
     cam.tilt += appliedTiltDelta;
 
     // Hard mechanical travel limits
-    cam.pan = Math.max(-45.0, Math.min(45.0, cam.pan));
+    cam.pan = Math.max(-90.0, Math.min(90.0, cam.pan));
     cam.tilt = Math.max(-30.0, Math.min(30.0, cam.tilt));
 
     ctrl.panDeltaApplied = parseFloat(appliedPanDelta.toFixed(4));
